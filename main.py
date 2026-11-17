@@ -28,9 +28,9 @@ from PIL import Image, ImageDraw, ImageFont
 import ayarlar as A
 
 KOK = Path(__file__).resolve().parent
-DURUM = KOK / "durum" / "paylasilanlar.json"
+DURUM = KOK / "paylasilanlar.json"
 BEKLEYEN = KOK / "cikti" / "bekleyen.json"
-FONT = str(KOK / "fonts" / "Inter-%s.otf")
+FONT = str(KOK / "Inter-%s.otf")
 IG = os.environ.get("IG_API_HOST") or "https://graph.facebook.com"
 AYLAR = ["OCAK", "ŞUBAT", "MART", "NİSAN", "MAYIS", "HAZİRAN", "TEMMUZ",
          "AĞUSTOS", "EYLÜL", "EKİM", "KASIM", "ARALIK"]
@@ -144,7 +144,7 @@ def satirlara_bol(d, metin, font, genislik):
 
 def gorsel_uret(kategori, baslik, ozet, cikti):
     renk = A.KATEGORILER[kategori]["renk"]
-    im = Image.open(KOK / "assets" / "arka_plan.png").convert("RGB")
+    im = Image.open(KOK / "arka_plan.png").convert("RGB")
     d = ImageDraw.Draw(im)
     # başlık uzunsa yazıyı küçült (en fazla 4 satır)
     for boyut in (84, 76, 68, 60, 54):
