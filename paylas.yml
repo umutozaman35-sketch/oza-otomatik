@@ -1,0 +1,63 @@
+name: OZA MEDYA otomatik paylaşım
+
+on:
+  schedule:
+    # Saatler UTC'dir. Bakü saatiyle 08:00-22:00 arası her 2 saatte bir (günde 8 gönderi).
+    - cron: "7 4-18/2 * * *"
+  workflow_dispatch: {}   # Actions sekmesinden elle de çalıştırabilirsiniz
+
+permissions:
+  contents: write
+
+concurrency:
+  group: oza-paylasim
+  cancel-in-progress: false
+
+jobs:
+  paylas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Paketleri kur
+        run: pip install requests pillow
+
+      - name: Haberi seç, yaz ve görseli üret
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python main.py hazirla
+
+      - name: Görseli depoya yükle
+        id: gorsel
+        run: |
+          if [ -f cikti/bekleyen.json ]; then
+            git config user.name "oza-bot"
+            git config user.email "oza-bot@users.noreply.github.com"
+            git add cikti
+            git commit -m "Yeni gönderi görseli"
+            git push
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            echo "var=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Instagram'a paylaş
+        if: steps.gorsel.outputs.var == '1'
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          DRY_RUN: ${{ vars.DRY_RUN }}
+          GORSEL_SHA: ${{ steps.gorsel.outputs.sha }}
+        run: |
+          sleep 15
+          python main.py paylas
+
+      - name: Durumu kaydet
+        if: steps.gorsel.outputs.var == '1'
+        run: |
+          git add -A durum cikti
+          git commit -m "Paylaşım kaydı" || true
+          git push
