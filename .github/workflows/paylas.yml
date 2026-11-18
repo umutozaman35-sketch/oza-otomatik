@@ -22,7 +22,7 @@ jobs:
           python-version: "3.12"
       - name: Paketleri kur
         run: pip install requests pillow
-      - name: Haberi seç, yaz ve görseli üret
+      - name: Bilgiyi yaz ve kartı üret
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python main.py hazirla

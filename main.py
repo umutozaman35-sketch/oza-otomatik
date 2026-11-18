@@ -81,16 +81,19 @@ def claude_yazdir(kategori, onceki):
         headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"],
                  "anthropic-version": "2023-06-01",
                  "content-type": "application/json"},
-        json={"model": A.CLAUDE_MODEL, "max_tokens": 800,
+        json={"model": A.CLAUDE_MODEL, "max_tokens": 3000,
               "messages": [{"role": "user", "content":
                             TALIMAT.format(kategori=kategori, konu=k["konu"], onceki=liste)}]},
         timeout=120)
     r.raise_for_status()
-    metin = "".join(p.get("text", "") for p in r.json()["content"])
+    cevap = r.json()
+    metin = "".join(p.get("text", "") for p in cevap["content"])
     m = re.search(r"\{.*\}", metin, re.S)
     if not m:
-        raise RuntimeError("Claude JSON döndürmedi: " + metin[:300])
-    return json.loads(m.group(0))
+        raise RuntimeError(f"Claude JSON döndürmedi (stop_reason={cevap.get('stop_reason')}): {metin}")
+    sonuc = json.loads(m.group(0))
+    sonuc["detay"] = sonuc["detay"][:230]
+    return sonuc
 
 
 # ---------------------------------------------------------------- tasarım
