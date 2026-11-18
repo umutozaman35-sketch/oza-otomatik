@@ -16,7 +16,7 @@ KOK = os.path.dirname(os.path.abspath(__file__))
 CIKTI = os.path.join(KOK, "cikti_reels")
 DURUM = os.path.join(KOK, "reels_durum.json")
 W, H, FPS = 1080, 1920, 30
-KULLANICI = "@hedeflerinyolunda"
+KULLANICI = "@hedeflerin_yolunda"
 MODEL = os.environ.get("CLAUDE_MODEL") or "claude-sonnet-5-5"
 IG = os.environ.get("IG_API_HOST") or "https://graph.facebook.com"
 IG_SURUM = os.environ.get("IG_API_VERSION") or "v23.0"
@@ -854,8 +854,12 @@ def paylas():
                 if "id" not in j: raise RuntimeError(j)
                 cid = j["id"]
     _bekle_hazir(cid, tok)
-    p = requests.post(f"{IG}/{IG_SURUM}/{uid}/media_publish", data={"creation_id": cid, "access_token": tok}, timeout=60).json()
-    print("yayın:", p)
+    p = {}
+    for deneme in range(6):   # Instagram bazen geçici "Fatal/Dahili hata" verir; bekleyip tekrar dene
+        p = requests.post(f"{IG}/{IG_SURUM}/{uid}/media_publish", data={"creation_id": cid, "access_token": tok}, timeout=60).json()
+        print("yayın:", p)
+        if "id" in p: break
+        time.sleep(30 * (deneme + 1))
     if "id" not in p: raise RuntimeError(p)
     link = ""
     try:
