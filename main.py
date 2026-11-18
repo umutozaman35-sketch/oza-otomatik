@@ -1,14 +1,13 @@
-"""OZA MEDYA otomatik haber paylaşımı.
+"""OZA BİLGİ otomatik bilgi kartı paylaşımı.
 
 Kullanım:
-  python main.py hazirla   -> haberi seçer, metni yazdırır, görseli üretir (cikti/bekleyen.json)
-  python main.py paylas    -> bekleyen görseli Instagram'a yükler
-  python main.py kimlik    -> anahtarın bağlı olduğu Instagram hesap kimliğini gösterir
+  python main.py hazirla   -> bilgiyi yazdırır, kartı üretir (cikti/bekleyen.json)
+  python main.py paylas    -> bekleyen kartı Instagram'a yükler
+  python main.py kimlik    -> anahtarın bağlı olduğu Instagram hesabını gösterir
 
 Gerekli ortam değişkenleri (GitHub Secrets):
   ANTHROPIC_API_KEY, IG_ACCESS_TOKEN
 İsteğe bağlı: IG_USER_ID (yoksa anahtardan otomatik bulunur), DRY_RUN=1 (Instagram'a yüklemeden dener)
-Meta "Unified login" sistem kullanıcısı anahtarı kullanılır; süresi dolmaz.
 """
 import hashlib
 import json
@@ -16,14 +15,11 @@ import os
 import re
 import sys
 import time
-import email.utils
-import xml.etree.ElementTree as ET
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import requests
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 import ayarlar as A
 
@@ -32,8 +28,8 @@ DURUM = KOK / "paylasilanlar.json"
 BEKLEYEN = KOK / "cikti" / "bekleyen.json"
 FONT = str(KOK / "Inter-%s.otf")
 IG = os.environ.get("IG_API_HOST") or "https://graph.facebook.com"
-AYLAR = ["OCAK", "ŞUBAT", "MART", "NİSAN", "MAYIS", "HAZİRAN", "TEMMUZ",
-         "AĞUSTOS", "EYLÜL", "EKİM", "KASIM", "ARALIK"]
+W, H = 1080, 1350
+SARI = "#FFC83D"
 
 
 # ---------------------------------------------------------------- durum
@@ -53,63 +49,33 @@ def kimlik(baslik):
     return hashlib.sha1(temiz.encode()).hexdigest()[:16]
 
 
-# ---------------------------------------------------------------- haberler
-def haberleri_getir(kategori):
-    url = A.KATEGORILER[kategori]["rss"]
-    r = requests.get(url, timeout=30, headers={"User-Agent": "Mozilla/5.0 OZA-MEDYA-bot"})
-    r.raise_for_status()
-    kok = ET.fromstring(r.content)
-    sinir = datetime.now(timezone.utc) - timedelta(hours=A.EN_ESKI_SAAT)
-    sonuc = []
-    for it in kok.iter("item"):
-        baslik = (it.findtext("title") or "").strip()
-        kaynak = (it.findtext("source") or "").strip()
-        if kaynak and baslik.endswith(" - " + kaynak):
-            baslik = baslik[: -len(" - " + kaynak)]
-        aciklama = re.sub(r"<[^>]+>", " ", it.findtext("description") or "")
-        aciklama = re.sub(r"\s+", " ", aciklama).strip()
-        tarih = it.findtext("pubDate")
-        try:
-            t = email.utils.parsedate_to_datetime(tarih)
-            if t < sinir:
-                continue
-        except Exception:
-            pass
-        if baslik:
-            sonuc.append({"baslik": baslik, "kaynak": kaynak or "Basın",
-                          "aciklama": aciklama[:400], "link": it.findtext("link") or ""})
-    return sonuc
-
-
 # ---------------------------------------------------------------- Claude
-TALIMAT = """Sen OZA MEDYA adlı Türkçe bir Instagram haber sayfasının editörüsün.
-Aşağıda "{kategori}" kategorisinde numaralı haber başlıkları var. Görevin:
+TALIMAT = """Sen OZA BİLGİ adlı Türkçe bir Instagram bilgi sayfasının editörüsün.
+Bu sayfa "Biliyor muydunuz?" tarzında eğlenceli, şaşırtıcı, önemli ve DOĞRU bilgi kartları paylaşır.
 
-1. Instagram'da paylaşmaya en uygun TEK haberi seç. Haber MUTLAKA "{kategori}"
-   kategorisine ait olmalı (GÜNDEM = Türkiye gündemi, SPOR = spor haberleri,
-   DİZİ = TV dizileri, MAGAZİN = ünlüler ve magazin). Kategoriye uymayan haberleri seçme.
-2. Şunları ATLA: doğrulanmamış iddia ve söylentiler, ölüm/hastalık söylentileri,
-   suç isnadı içeren ve kişileri hedef gösteren haberler, şiddet ve intihar haberleri,
-   çocukları içeren hassas olaylar, siyasi taraf tutan veya kışkırtıcı içerikler.
-3. SADECE verilen bilgileri kullan. Başlıkta veya açıklamada olmayan hiçbir rakam,
-   isim, tarih ya da ayrıntı EKLEME. Yorum katma, tarafsız ol.
-4. Metni kaynaktan kopyalama; kendi cümlelerinle yaz.
+Kategori: {kategori} ({konu})
 
-Hiçbiri uygun değilse {{"atla": true}} döndür.
-Yoksa yalnızca şu JSON'u döndür, başka hiçbir şey yazma:
-{{"secim": <numara>, "baslik": "<en fazla 70 karakter, çarpıcı ama abartısız başlık>",
-"ozet": "<en fazla 170 karakter, 1-2 cümle özet>",
-"aciklama": "<Instagram açıklaması: 2-4 cümle, yalnızca verilen bilgiler>"}}
+Kurallar:
+1. Bu kategoriye uyan TEK bir bilgi yaz. Bilgi hem eğlenceli/şaşırtıcı olsun ("vay be!" dedirtsin)
+   hem de değerli olsun: insanların arkadaşına anlatmak isteyeceği, öğrenince bir şey kazandığı
+   bilgiler seç. Sıkıcı, çok bilinen ya da önemsiz ayrıntılardan kaçın.
+2. Bilgi kesinlikle doğru, bilimsel olarak kabul görmüş ve kolayca doğrulanabilir olmalı.
+   Emin olmadığın rakam, tarih veya isim kullanma. Tartışmalı, efsane ya da
+   "internette dolaşan ama yanlış" bilgileri (ör. "Çin Seddi uzaydan görünür") KULLANMA.
+3. Siyaset, din, ölüm/şiddet, sağlık tavsiyesi ve kişileri hedef alan konulardan kaçın.
+4. Aşağıdaki daha önce paylaşılmış başlıklara benzeyen bir bilgi YAZMA:
+{onceki}
 
-Haberler:
-{liste}
+Yalnızca şu JSON'u döndür, başka hiçbir şey yazma:
+{{"baslik": "<en fazla 65 karakter, çarpıcı bilgi cümlesi>",
+"detay": "<en fazla 190 karakter, bilgiyi 1-2 cümleyle açıklayan kısım>",
+"aciklama": "<Instagram açıklaması: 2-4 cümle, bilgiyi biraz daha açan ve takipçiye soru soran samimi metin>"}}
 """
 
 
-def claude_yazdir(kategori, haberler):
-    liste = "\n".join(
-        f"{i}. {h['baslik']} (Kaynak: {h['kaynak']}) {h['aciklama'][:200]}"
-        for i, h in enumerate(haberler))
+def claude_yazdir(kategori, onceki):
+    k = A.KATEGORILER[kategori]
+    liste = "\n".join(f"- {b}" for b in onceki[-80:]) or "- (henüz yok)"
     r = requests.post(
         "https://api.anthropic.com/v1/messages",
         headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"],
@@ -117,7 +83,7 @@ def claude_yazdir(kategori, haberler):
                  "content-type": "application/json"},
         json={"model": A.CLAUDE_MODEL, "max_tokens": 800,
               "messages": [{"role": "user", "content":
-                            TALIMAT.format(kategori=kategori, liste=liste)}]},
+                            TALIMAT.format(kategori=kategori, konu=k["konu"], onceki=liste)}]},
         timeout=120)
     r.raise_for_status()
     metin = "".join(p.get("text", "") for p in r.json()["content"])
@@ -128,11 +94,15 @@ def claude_yazdir(kategori, haberler):
 
 
 # ---------------------------------------------------------------- tasarım
-def satirlara_bol(d, metin, font, genislik):
+def font(agirlik, boyut):
+    return ImageFont.truetype(FONT % agirlik, boyut)
+
+
+def satirlara_bol(d, metin, f, genislik):
     kelimeler, satirlar, cur = metin.split(), [], ""
     for k in kelimeler:
         t = (cur + " " + k).strip()
-        if d.textlength(t, font=font) <= genislik:
+        if d.textlength(t, font=f) <= genislik:
             cur = t
         else:
             if cur:
@@ -142,78 +112,123 @@ def satirlara_bol(d, metin, font, genislik):
     return satirlar
 
 
-def gorsel_uret(kategori, baslik, ozet, cikti):
+def hex_rgb(h):
+    h = h.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def arka_plan(renk):
+    # koyu lacivert dikey geçiş
+    ust, alt = (16, 20, 44), (6, 8, 20)
+    grad = Image.linear_gradient("L").resize((W, H))
+    im = Image.composite(Image.new("RGB", (W, H), alt), Image.new("RGB", (W, H), ust), grad)
+    # kategori renginde yumuşak ışık
+    isik = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(isik).ellipse([520, -260, 1420, 640], fill=90)
+    ImageDraw.Draw(isik).ellipse([-420, 900, 380, 1700], fill=45)
+    isik = isik.filter(ImageFilter.GaussianBlur(170))
+    im = Image.composite(Image.new("RGB", (W, H), hex_rgb(renk)), im, isik)
+    # silik büyük soru işareti
+    iz = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(iz).text((640, 120), "?", font=font("ExtraBold", 760), fill=16)
+    im = Image.composite(Image.new("RGB", (W, H), (255, 255, 255)), im, iz)
+    return im
+
+
+def harf_aralikli(d, xy, metin, f, renk, aralik):
+    x, y = xy
+    for c in metin:
+        d.text((x, y), c, font=f, fill=renk)
+        x += d.textlength(c, font=f) + aralik
+    return x
+
+
+def gorsel_uret(kategori, baslik, detay, cikti, no=None):
     renk = A.KATEGORILER[kategori]["renk"]
-    im = Image.open(KOK / "arka_plan.png").convert("RGB")
+    im = arka_plan(renk)
     d = ImageDraw.Draw(im)
-    # başlık uzunsa yazıyı küçült (en fazla 4 satır)
-    for boyut in (84, 76, 68, 60, 54):
-        hf = ImageFont.truetype(str(FONT % "ExtraBold"), boyut)
-        hs = satirlara_bol(d, baslik, hf, 940)
+
+    # logo: OZA | BİLGİ
+    d.text((70, 62), "OZA", font=font("ExtraBold", 66), fill="white")
+    lx = 70 + d.textlength("OZA", font=font("ExtraBold", 66)) + 22
+    d.rectangle([lx, 74, lx + 5, 124], fill=SARI)
+    harf_aralikli(d, (lx + 24, 80), "BİLGİ", font("Bold", 34), SARI, 7)
+    if no is not None:
+        nf = font("SemiBold", 26)
+        t = f"BİLGİ KARTI  #{no:03d}"
+        d.text((1010 - d.textlength(t, font=nf), 84), t, font=nf, fill="#9AA6C8")
+    d.line([70, 165, 1010, 165], fill=(70, 78, 112), width=2)
+
+    # başlık boyutu: en fazla 4 satır
+    for boyut in (82, 74, 66, 60, 54):
+        hf = font("ExtraBold", boyut)
+        hs = satirlara_bol(d, baslik, hf, 930)
         if len(hs) <= 4:
             break
-    satir_h = int(boyut * 1.19)
-    sf = ImageFont.truetype(str(FONT % "Medium"), 38)
-    ss = satirlara_bol(d, ozet, sf, 940)[:4]
-    blok = 58 + 52 + len(hs) * satir_h + 30 + 6 + 40 + len(ss) * 54
-    x, y = 70, int(170 + (1220 - 170 - blok) / 2)
+    satir_h = int(boyut * 1.2)
+    sf = font("Medium", 40)
+    ss = satirlara_bol(d, detay, sf, 920)[:5]
+
+    blok = 44 + 40 + 58 + 50 + len(hs) * satir_h + 44 + len(ss) * 58 + 40
+    y = int(200 + (1180 - 200 - blok) / 2)
+
+    # "BİLİYOR MUYDUNUZ?"
+    harf_aralikli(d, (70, y), "BİLİYOR MUYDUNUZ?", font("Bold", 30), SARI, 5)
+    y += 44 + 40
     # kategori etiketi
-    cf = ImageFont.truetype(str(FONT % "Bold"), 30)
-    tw = d.textlength(kategori, font=cf)
-    d.rounded_rectangle([x, y, x + tw + 48, y + 58], 29, fill=renk)
-    d.text((x + 24, y + 11), kategori, font=cf, fill="white")
-    ty = y + 110
+    cf = font("Bold", 28)
+    tw = d.textlength(kategori, font=cf) + 6 * len(kategori)
+    d.rounded_rectangle([70, y, 70 + tw + 44, y + 54], 27, fill=renk)
+    harf_aralikli(d, (92, y + 11), kategori, cf, "white", 6)
+    y += 58 + 50
+    # başlık
     for s in hs:
-        d.text((70, ty), s, font=hf, fill="white")
-        ty += satir_h
-    ty += 30
-    d.rectangle([70, ty, 160, ty + 6], fill=renk)
-    ty += 40
+        d.text((70, y), s, font=hf, fill="white")
+        y += satir_h
+    y += 18
+    # detay kutusu: solda renkli çizgi
+    ust = y + 26
     for s in ss:
-        d.text((70, ty), s, font=sf, fill="#C9D3EA")
-        ty += 54
-    # tarih ve kullanıcı adı
-    simdi = datetime.now(ZoneInfo(A.SAAT_DILIMI))
-    tarih = f"{simdi.day} {AYLAR[simdi.month - 1]} {simdi.year}"
-    df = ImageFont.truetype(str(FONT % "Medium"), 26)
-    d.text((1010 - d.textlength(tarih, font=df), 75), tarih, font=df, fill="#AEB9D6")
-    ff = ImageFont.truetype(str(FONT % "SemiBold"), 32)
-    d.text((70, 1265), A.KULLANICI_ADI, font=ff, fill="white")
+        d.text((104, y + 26), s, font=sf, fill="#D3DAEE")
+        y += 58
+    d.rounded_rectangle([70, ust + 4, 78, y + 26 - 10], 4, fill=renk)
+
+    # alt bant
+    d.rectangle([0, 1218, W, H], fill=(5, 7, 18))
+    d.rectangle([0, 1218, W, 1221], fill=renk)
+    d.text((70, 1262), A.KULLANICI_ADI, font=font("SemiBold", 34), fill="white")
+    kf = font("Bold", 24)
+    harf_aralikli(d, (742, 1270), "KAYDET • PAYLAŞ", kf, SARI, 3)
     im.save(cikti, "JPEG", quality=93)
 
 
 # ---------------------------------------------------------------- adımlar
 def hazirla():
     durum = durum_oku()
-    goruldu = {p["id"] for p in durum["paylasilanlar"]}
-    n = len(durum["paylasilanlar"])
-    sira = A.SIRA[n % len(A.SIRA):] + A.SIRA[: n % len(A.SIRA)]
-    for kategori in dict.fromkeys(sira):  # sıradaki kategoriden başla, olmazsa diğerleri
-        try:
-            haberler = [h for h in haberleri_getir(kategori) if kimlik(h["baslik"]) not in goruldu][:12]
-        except Exception as e:
-            print(f"[{kategori}] haberler alınamadı: {e}")
-            continue
-        if not haberler:
-            print(f"[{kategori}] yeni haber yok")
-            continue
-        sonuc = claude_yazdir(kategori, haberler)
-        if sonuc.get("atla"):
-            print(f"[{kategori}] uygun haber bulunamadı, atlandı")
-            continue
-        h = haberler[int(sonuc["secim"])]
-        dosya = f"cikti/{datetime.now(timezone.utc):%Y%m%d-%H%M%S}.jpg"
-        gorsel_uret(kategori, sonuc["baslik"], sonuc["ozet"], KOK / dosya)
-        etiket = A.KATEGORILER[kategori]["etiketler"]
-        aciklama = (f"{sonuc['baslik']}\n\n{sonuc['aciklama']}\n\n"
-                    f"Kaynak: {h['kaynak']}\n\n{etiket} #ozamedya")
-        BEKLEYEN.write_text(json.dumps({
-            "id": kimlik(h["baslik"]), "kategori": kategori, "dosya": dosya,
-            "aciklama": aciklama, "orijinal": h["baslik"], "kaynak": h["kaynak"]},
-            ensure_ascii=False, indent=1), encoding="utf-8")
-        print(f"[{kategori}] hazır: {sonuc['baslik']} -> {dosya}")
+    gecmis = durum["paylasilanlar"]
+    goruldu = {p["id"] for p in gecmis}
+    n = len(gecmis)
+    kategori = A.SIRA[n % len(A.SIRA)]
+    onceki = [p["baslik"] for p in gecmis if p.get("kategori") == kategori]
+    for deneme in range(3):
+        sonuc = claude_yazdir(kategori, onceki)
+        if kimlik(sonuc["baslik"]) not in goruldu:
+            break
+        onceki.append(sonuc["baslik"])
+    else:
+        print("Yeni bilgi üretilemedi, bu çalışma atlandı.")
         return
-    print("Bu çalışmada paylaşılacak haber yok.")
+    dosya = f"cikti/{datetime.now(timezone.utc):%Y%m%d-%H%M%S}.jpg"
+    gorsel_uret(kategori, sonuc["baslik"], sonuc["detay"], KOK / dosya, no=n + 1)
+    etiket = A.KATEGORILER[kategori]["etiketler"]
+    aciklama = (f"{sonuc['baslik']}\n\n{sonuc['aciklama']}\n\n"
+                f"Daha fazla bilgi için {A.KULLANICI_ADI} takip et, kaydet ve paylaş!\n\n"
+                f"{etiket} #ozabilgi #biliyormuydunuz #ilginçbilgiler")
+    BEKLEYEN.write_text(json.dumps({
+        "id": kimlik(sonuc["baslik"]), "kategori": kategori, "dosya": dosya,
+        "aciklama": aciklama, "orijinal": sonuc["baslik"]},
+        ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"[{kategori}] hazır: {sonuc['baslik']} -> {dosya}")
 
 
 def ig_istek(yontem, yol, **params):

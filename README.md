@@ -1,11 +1,11 @@
-# OZA MEDYA – Otomatik Instagram Haber Sistemi
+# OZA BİLGİ – Otomatik Instagram Bilgi Kartı Sistemi
 
 Bu sistem Bakü saatiyle 08:00–22:00 arasında her 2 saatte bir (günde 8 kez) çalışır ve şunları yapar:
 
-1. **Gündem, Spor, Dizi ve Magazin** kategorilerinden sırayla bir haber seçer; bu dört kategori dışında hiçbir şey paylaşılmaz.
-2. Claude ile haberin metnini kısa ve özgün bir şekilde yeniden yazar; söylenti ve suçlama içeren riskli haberleri atlar.
-3. OZA MEDYA şablonuyla görseli üretir.
-4. Görseli kaynak adıyla birlikte Instagram'da paylaşır.
+1. **Uzay, Tarih, Bilim, Doğa, İnsan, Dünya** konularından sıradakini seçer.
+2. Claude ile eğlenceli, önemli ve doğru bir "Biliyor muydunuz?" bilgisi yazar; daha önce paylaşılanları tekrar etmez.
+3. OZA BİLGİ şablonuyla kartı üretir.
+4. Kartı @oza_bilgi hesabında paylaşır.
 
 ## Kurulum
 Kurulum adımları sohbette anlatıldı. Kısaca:
@@ -22,7 +22,7 @@ Kurulum adımları sohbette anlatıldı. Kısaca:
 ## Ayarlar (`ayarlar.py`)
 - `KULLANICI_ADI`: Görselin altında görünen Instagram adı.
 - `SIRA`: Kategorilerin paylaşım sırası.
-- `KATEGORILER`: Kategori renkleri, haber kaynakları ve hashtag'ler.
+- `KATEGORILER`: Konu renkleri, konu tarifleri ve hashtag'ler.
 - Paylaşım saatleri `.github/workflows/paylas.yml` dosyasındaki `cron` satırındadır. Saatler UTC'dir; Bakü saati UTC+4'tür.
 
 ## Bakım
@@ -30,4 +30,4 @@ Kurulum adımları sohbette anlatıldı. Kısaca:
 - GitHub'da Actions sekmesinde kırmızı çarpı görürseniz hatanın ayrıntısına bakın.
 
 ## Sorumluluk
-Paylaşılan içeriklerden hesap sahibi sorumludur. Sistem riskli haberleri atlamaya ve yalnızca kaynakta geçen bilgileri kullanmaya ayarlıdır, yine de düzenli kontrol önerilir.
+Paylaşılan içeriklerden hesap sahibi sorumludur. Sistem yalnızca doğrulanabilir bilgiler yazmaya ve hassas konulardan kaçınmaya ayarlıdır, yine de düzenli kontrol önerilir.

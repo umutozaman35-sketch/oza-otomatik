@@ -1,4 +1,4 @@
-name: OZA MEDYA otomatik paylaşım
+name: OZA BİLGİ otomatik paylaşım
 
 on:
   schedule:
@@ -26,6 +26,12 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python main.py hazirla
+      - name: Deneme kartını kaydet
+        if: vars.DRY_RUN == '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: deneme-karti
+          path: cikti/*.jpg
       - name: Görseli depoya yükle
         id: gorsel
         run: |
