@@ -16,7 +16,7 @@ KATEGORILER = {
         "etiketler": "#tarih #tarihtebugün #bilgi",
     },
     "BİLİM": {
-        "renk": "#8B6CFF",
+        "renk": "#B347FF",
         "konu": "bilim: uzay, fizik, kimya, insan vücudu, teknoloji, astronomi",
         "etiketler": "#bilim #uzay #bilgi",
     },
