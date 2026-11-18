@@ -20,7 +20,10 @@ KULLANICI = "@hedeflerinyolunda"
 MODEL = os.environ.get("CLAUDE_MODEL") or "claude-sonnet-5-5"
 IG = os.environ.get("IG_API_HOST") or "https://graph.facebook.com"
 IG_SURUM = os.environ.get("IG_API_VERSION") or "v23.0"
-SIRA = ["liste", "soz", "mit", "liste", "soz", "egzersiz"]
+SIRA = ["liste", "soz", "mit", "gorsel", "liste", "egzersiz", "soz", "gorsel"]   # 8 paylaşımda 2 görsel
+BAKU = timezone(timedelta(hours=4))
+SAATLER = {"hafta_ici": [12, 17, 22], "hafta_sonu": [11, 15, 19, 22]}   # Bakü saati
+REPO = os.environ.get("GITHUB_REPOSITORY") or "umutozaman35-sketch/oza-otomatik"
 UA = {"User-Agent": "HedeflerinYolundaBot/1.0 (github.com/umutozaman35-sketch/oza-otomatik)"}
 
 # ----------------------------------------------------------------- yazı tipleri
@@ -476,12 +479,16 @@ def norm(m):
 def sayilar(m): return set(re.findall(r"\d+(?:[.,]\d+)?", m.replace("*", "")))
 
 # ----------------------------------------------------------------- Claude
-def claude(istem, max_tokens=4000):
-    import requests
+def claude(istem, max_tokens=4000, resim=None):
+    import requests, base64
+    icerik = istem
+    if resim is not None:
+        icerik = [{"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(resim).decode()}},
+                  {"type": "text", "text": istem}]
     for deneme in range(3):
-        r = requests.post("https://api.anthropic.com/v1/messages", timeout=180, headers={
+        r = requests.post("https://api.anthropic.com/v1/messages", timeout=240, headers={
             "x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": "2023-06-01", "content-type": "application/json"},
-            json={"model": MODEL, "max_tokens": max_tokens, "messages": [{"role": "user", "content": istem}]})
+            json={"model": MODEL, "max_tokens": max_tokens, "messages": [{"role": "user", "content": icerik}]})
         if not r.ok:
             print("Claude hata:", r.status_code, r.text[:300]); time.sleep(5); continue
         metin = "".join(b.get("text", "") for b in r.json().get("content", []))
@@ -501,6 +508,8 @@ def aday_iste(sablon, kullanilan):
     ne = {"liste": "Ortak bir temaya bağlanabilecek 3 psikoloji / verimlilik / davranış bilimi kavramı (ör. tema 'Zamanını yöneten 3 yasa': Pareto ilkesi, Parkinson yasası, Eisenhower matrisi). Her aday için 'tema' ve 3 Vikipedi madde başlığından oluşan 'sayfalar' ver.",
           "mit": "Gençler arasında yaygın 3 yanlış inanç ya da şaşırtıcı psikoloji gerçeği; her biri bir Türkçe Vikipedi maddesiyle doğrulanabilmeli. Her aday için 'tema' ve 3 madde başlığından oluşan 'sayfalar' ver.",
           "soz": "Disiplin, azim, odak veya başarı üzerine güçlü sözleri olan, tr.wikiquote.org'da (Vikisöz) sayfası OLAN tanınmış kişiler (filozof, bilim insanı, yazar, sporcu, girişimci; yaşayan siyasetçi değil). Her aday için 'sayfalar': [kişinin Vikisöz sayfa başlığı].",
+          "gorsel_soz": "Disiplin, azim, odak veya başarı üzerine güçlü sözleri olan, tr.wikiquote.org'da (Vikisöz) sayfası OLAN tanınmış kişiler (filozof, bilim insanı, yazar, sporcu, girişimci; yaşayan siyasetçi değil). Her aday için 'sayfalar': [kişinin Vikisöz sayfa başlığı].",
+          "gorsel_zihin": "Gençlerin hayatına dokunan tek bir psikoloji / davranış bilimi kavramı (ör. Zeigarnik etkisi, Dunning-Kruger etkisi, Erteleme, Akış (psikoloji)). Her aday için 'tema' ve 'sayfalar': [tek Vikipedi madde başlığı].",
           "egzersiz": "Bilimsel temeli olan, 1 dakikada uygulanabilecek nefes, odak veya zihin teknikleri (ör. Kutu nefesi, Diyafram nefesi, Pomodoro tekniği). Her aday için 'tema' ve 'sayfalar': [Vikipedi madde başlığı]."}[sablon]
     istem = (f"{KITLE}\n\nGörev: {ne}\nSadece tr.wikipedia.org / tr.wikiquote.org'da GERÇEKTEN VAR OLAN tam başlıkları kullan. "
              f"Daha önce kullanılanları seçme: {json.dumps(kullanilan[-80:], ensure_ascii=False)}\n"
@@ -518,13 +527,16 @@ SEMA = {
  "soz": '{"sablon":"soz","konu":"kişi adı","kaynak":"Vikisöz sayfa başlığı","kanca":["4-6 kısa satır"],"soz":"VİKİSÖZ METNİNDEN KELİMESİ KELİMESİNE kopyalanmış söz (en fazla 160 karakter); en güçlü 1-3 kelimeyi *yıldızla*",'
         '"kisi":"kişinin adı","hikaye":["kişinin hayatından 3-4 kısa gerçek, her biri en fazla 80 karakter, yalnız Vikipedi metninden"],'
         '"ders":["en fazla 36 karakterlik güçlü ders cümlesi","1-2 açıklama cümlesi"],"kapanis":{...},"aciklama":"...","etiketler":[...]}',
+ "gorsel_soz": '{"sablon":"gorsel","tur":"soz","konu":"kişi adı","soz":"VİKİSÖZ METNİNDEN KELİMESİ KELİMESİNE kopyalanmış kısa söz (en fazla 110 karakter); en güçlü 1-3 kelimeyi *yıldızla*","kisi":"kişinin adı","aciklama":"Instagram açıklaması: sözün bugüne dersi 2-3 cümle + soru","etiketler":["#..." 6-8 adet]}',
+ "gorsel_zihin": '{"sablon":"gorsel","tur":"zihin","konu":"kavram","baslik":"en fazla 42 karakterlik çarpıcı başlık; 1-2 kelimeyi *yıldızla*","acik":"kavramı açıklayan 2-3 cümle, toplam en fazla 210 karakter, yalnız kaynaktan; son cümle uygulanabilir ders","aciklama":"Instagram açıklaması 2-3 cümle + soru","etiketler":["#..." 6-8 adet]}',
  "egzersiz": '{"sablon":"egzersiz","konu":"teknik adı","kaynak":"Vikipedi başlığı","ad":"en fazla 20 karakter","kanca":["4-6 kısa satır"],"giris":["2-3 cümle, en fazla 80 karakter"],'
              '"adimlar":[{"metin":"en fazla 18 karakter, ör. Nefes al","sure":4}] (2-4 adım, süre 2-8 sn),"tur":2,"fayda":["2-3 cümle, yalnız kaynakta yazanlar, tıbbi iddia yok"],"kapanis":{...},"aciklama":"...","etiketler":[...]}',
 }
 
 def senaryo_iste(sablon, kaynaklar):
     metinler = "\n\n".join(f"=== KAYNAK: {ad} ({tur}) ===\n{m[:9000]}" for ad, tur, m in kaynaklar)
-    istem = (f"{KITLE}\n\n1-1,5 dakikalık özgün bir Reels videosunun ekran metinlerini yaz. Şablon: {sablon}.\n"
+    ne = "tek bir Instagram görsel gönderisinin (kart) metnini" if sablon.startswith("gorsel") else "1-1,5 dakikalık özgün bir Reels videosunun ekran metinlerini"
+    istem = (f"{KITLE}\n\n{ne} yaz. Şablon: {sablon}.\n"
              "KURALLAR:\n- Her bilgi, sayı, tarih ve isim YALNIZCA aşağıdaki kaynak metinlerde açıkça yazanlardan gelsin. Kaynakta olmayan hiçbir şeyi ekleme.\n"
              "- Söz varsa, kaynak metinde nasıl yazıyorsa öyle kopyala (kelimeler aynı).\n"
              "- Başka bir hesabın içeriğini kopyalama; cümleler özgün olsun.\n- Kanca ilk 2 saniyede merak uyandırsın.\n"
@@ -535,7 +547,7 @@ def denetle(senaryo, kaynaklar):
     """Kaynaklarda olmayan iddia var mı? Sayılar ve söz kelimesi kelimesine kontrol + Claude denetimi."""
     kaynak_birlesik = " ".join(m for _, _, m in kaynaklar)
     nk = norm(kaynak_birlesik)
-    if senaryo.get("sablon") == "soz":
+    if senaryo.get("soz"):
         soz = norm(senaryo["soz"].replace("*", ""))
         if len(soz) < 12 or soz not in nk:
             return False, "söz Vikisöz metninde birebir bulunamadı"
@@ -553,16 +565,129 @@ def denetle(senaryo, kaynaklar):
         return False, "; ".join(sonuc.get("sorunlar", []))[:300]
     return True, ""
 
+# ----------------------------------------------------------------- görsel (kart) gönderisi 1080x1350
+KW, KH = 1080, 1350
+def kart_zemin():
+    im = Image.new("RGB", (KW, KH), (6, 6, 7))
+    g = Image.new("L", (KW, KH), 0); ImageDraw.Draw(g).ellipse([KW*.35, -KH*.25, KW*1.35, KH*.45], fill=60)
+    g = g.filter(ImageFilter.GaussianBlur(160)); im = Image.composite(Image.new("RGB", (KW, KH), (70, 52, 18)), im, g)
+    rng = np.random.default_rng(3); a = np.asarray(im).astype(np.int16)
+    a += rng.integers(-6, 7, size=(KH, KW, 1)); return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+
+def _aralikli(im, xy, t, f, aralik, renk=None):
+    d = ImageDraw.Draw(im); x, y = xy
+    for ch in t:
+        if renk: d.text((x, y), ch, font=f, fill=renk)
+        else: _altin_tek(im, (x, y), ch, f, 1, "la")
+        x += d.textlength(ch, font=f) + aralik
+def _aw(t, f, a):
+    d = ImageDraw.Draw(Image.new("L", (1, 1))); return sum(d.textlength(c, font=f) for c in t) + a * (len(t) - 1)
+
+def kart_ciz(s, cikti):
+    im = kart_zemin(); d = ImageDraw.Draw(im); X = 84
+    soz = s.get("tur") == "soz"; etiket = "GÜNÜN SÖZÜ" if soz else "ZİHİN"
+    m = isaret(64); im.paste(m, (X, 64), m)
+    _aralikli(im, (X + 88, 72), "HEDEFLERİN", inter("ExtraBold", 24), 4, (245, 245, 245))
+    _aralikli(im, (X + 88, 102), "YOLUNDA", inter("SemiBold", 20), 9)
+    f = inter("Bold", 22); w = _aw(etiket, f, 5)
+    d.rounded_rectangle([KW - X - w - 44, 76, KW - X, 120], 22, outline=GOLD, width=2)
+    _aralikli(im, (KW - X - w - 22, 86), etiket, f, 5, (255, 224, 138))
+    ana = s["soz"] if soz else s["baslik"]
+    jet = jetonlar(tr_buyuk(ana))
+    for boy in (100, 92, 84, 76, 68, 62, 56):
+        fb = pop(boy); sat = sar(jet, fb, KW - 2 * X)
+        if len(sat) <= (6 if soz else 5): break
+    lh = int(boy * 1.12)
+    if soz:
+        alt_bl = 90
+    else:
+        bf = inter("Medium", 36); bs = sar([(k, False) for k in s["acik"].split()], bf, KW - 2 * X - 40); alt_bl = 60 + len(bs) * 54
+    y = int(200 + max(0, (1200 - 200 - len(sat) * lh - alt_bl) / 2))
+    sp = d.textlength(" ", font=fb)
+    for st in sat:
+        x = X
+        for k, a in st:
+            if a: _altin_tek(im, (x, y), k, fb, 1, "la")
+            else: d.text((x, y), k, font=fb, fill=(245, 245, 245))
+            x += d.textlength(k, font=fb) + sp
+        y += lh
+    if soz:
+        y += 50; _altin_tek(im, (X, y), "—", inter("Bold", 30), 1, "la")
+        _aralikli(im, (X + 52, y + 2), tr_buyuk(s["kisi"]), inter("SemiBold", 26), 6, (150, 150, 150))
+    else:
+        y += 60; im.paste(altin_doku(5, len(bs) * 54 - 10), (X, y + 5))
+        for st in bs: d.text((X + 30, y), " ".join(k for k, _ in st), font=bf, fill=(205, 205, 205)); y += 54
+    d.rectangle([X, 1236, KW - X, 1237], fill=(40, 40, 40))
+    d.text((X, 1286), KULLANICI, font=inter("SemiBold", 27), fill=(150, 150, 150), anchor="lm")
+    d.text((KW - X, 1286), "Kaynak: " + ("Vikisöz" if soz else "Vikipedi"), font=inter("Medium", 24), fill=(110, 110, 110), anchor="rm")
+    im.save(cikti, quality=95)
+
+# ----------------------------------------------------------------- kalite denetimleri
 def bicim_denetle(s):
     try:
-        assert 3 <= len(s["kanca"]) <= 6
-        if s["sablon"] in ("liste", "mit"): assert len(s["maddeler"]) == 3
-        if s["sablon"] == "egzersiz": assert 2 <= len(s["adimlar"]) <= 4
-        if s["sablon"] == "soz": assert s["soz"] and s["hikaye"] and s["ders"]
+        if s["sablon"] == "gorsel":
+            if s.get("tur") == "soz": assert 12 <= len(s["soz"].replace("*", "")) <= 140 and s["kisi"]
+            else: assert len(s["baslik"].replace("*", "")) <= 60 and 40 <= len(s["acik"]) <= 260
+        else:
+            assert 3 <= len(s["kanca"]) <= 6
+            if s["sablon"] in ("liste", "mit"): assert len(s["maddeler"]) == 3
+            if s["sablon"] == "egzersiz": assert 2 <= len(s["adimlar"]) <= 4
+            if s["sablon"] == "soz": assert s["soz"] and s["hikaye"] and s["ders"]
         assert s.get("aciklama")
-    except Exception as e:
+    except Exception:
         return False
     return True
+
+def editor(s, kaynaklar):
+    """3. denetim: kıdemli editör puanlar ve (yeni bilgi eklemeden) iyileştirir."""
+    sonuc = claude(f"{KITLE}\n\nSen bu hesabın kıdemli içerik editörüsün. Aşağıdaki Instagram içeriğini 1-10 arası puanla: kanca gücü, değer, netlik, "
+                   "Türkçe dil ve yazım, özgünlük, kitleye uygunluk. Sonra zayıf yerleri düzelt: yazım/dil hatalarını gider, kancayı güçlendir, gereksiz "
+                   "kelimeleri at. KESİNLİKLE yeni bilgi, sayı, isim veya söz ekleme; söz alanını ('soz') ASLA değiştirme (yalnız *yıldız* vurgusu değişebilir). "
+                   "Aynı JSON yapısını ve uzunluk sınırlarını koru.\n\nİÇERİK:\n" + json.dumps(s, ensure_ascii=False) +
+                   "\n\nKAYNAKLAR:\n" + "\n\n".join(f"=== {a} ===\n{m[:6000]}" for a, _, m in kaynaklar) +
+                   '\n\nSadece JSON döndür: {"puan": 1-10, "sorunlar": ["..."], "icerik": {düzeltilmiş tam içerik}}', 4000)
+    yeni = sonuc.get("icerik") or s
+    yeni["sablon"] = s["sablon"]
+    if s.get("tur"): yeni["tur"] = s["tur"]
+    if s.get("soz"): yeni["soz"] = yeni.get("soz") if norm(yeni.get("soz", "").replace("*", "")) == norm(s["soz"].replace("*", "")) else s["soz"]
+    return float(sonuc.get("puan", 0) or 0), sonuc.get("sorunlar", []), yeni
+
+def video_bilgi(yol):
+    r = subprocess.run([ffmpeg_yolu(), "-hide_banner", "-i", yol], capture_output=True, text=True)
+    m = re.search(r"Duration: (\d+):(\d+):([\d.]+)", r.stderr)
+    sure = int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3)) if m else 0
+    return sure, "Audio:" in r.stderr, "1080x1920" in r.stderr
+
+def video_kareleri(yol, anlar):
+    kareler = []
+    for a in anlar:
+        r = subprocess.run([ffmpeg_yolu(), "-loglevel", "error", "-ss", f"{a:.2f}", "-i", yol, "-frames:v", "1", "-vf", "scale=360:640",
+                            "-f", "image2pipe", "-vcodec", "mjpeg", "-"], capture_output=True)
+        if r.stdout:
+            import io; kareler.append(Image.open(io.BytesIO(r.stdout)).convert("RGB"))
+    sut = 4; sat = math.ceil(len(kareler) / sut)
+    m = Image.new("RGB", (sut * 366, sat * 646), (90, 90, 90))
+    for i, k in enumerate(kareler): m.paste(k, ((i % sut) * 366, (i // sut) * 646))
+    import io; b = io.BytesIO(); m.save(b, "JPEG", quality=85); return b.getvalue(), m
+
+def gorsel_denetim(resim, tur):
+    """4. denetim: son çıktının görüntüsüne bakılır (taşan/kesik yazı, yazım hatası, boş kare, okunurluk)."""
+    s = claude("Bu, bir Instagram " + ("Reels videosundan alınmış sıralı karelerin (soldan sağa, yukarıdan aşağı) montajı. " if tur == "video" else "görsel gönderisi. ") +
+               "Yayın öncesi son kalite kontrolünü yap. Şunlara bak: kesilmiş, taşmış ya da üst üste binmiş yazı; okunmayan yazı; Türkçe yazım/harf hatası "
+               "(İ/ı, ş, ğ dahil); bozuk karakter ya da kutucuk (□); boş veya bozuk kare; profesyonel görünmeyen bir şey. Geçiş anında yarı saydam görünen yazılar normaldir. "
+               'Sadece JSON döndür: {"gecerli": true/false, "sorunlar": ["..."]}', 800, resim=resim)
+    return bool(s.get("gecerli")), s.get("sorunlar", [])
+
+# ----------------------------------------------------------------- zamanlama
+def simdi(): return datetime.now(BAKU)
+def aktif_slot():
+    """Elle çalıştırmada 'elle'; zamanlanmış çalıştırmada en yakın paylaşım saatini döndürür (yoksa None)."""
+    if os.environ.get("GITHUB_EVENT_NAME") != "schedule": return "elle-" + simdi().strftime("%Y-%m-%d %H:%M"), None
+    n = simdi(); gun = "hafta_sonu" if n.weekday() >= 5 else "hafta_ici"
+    for h in SAATLER[gun]:
+        t = n.replace(hour=h, minute=0, second=0, microsecond=0)
+        if -35 * 60 <= (n - t).total_seconds() <= 100 * 60: return t.strftime("%Y-%m-%d %H"), t
+    return None, None
 
 # ----------------------------------------------------------------- durum
 def durum_oku():
@@ -572,42 +697,82 @@ def durum_oku():
 def durum_yaz(d):
     with open(DURUM, "w", encoding="utf-8") as f: json.dump(d, f, ensure_ascii=False, indent=2)
 
+def kaynak_topla(sablon, aday, kullanilan):
+    kaynaklar = []
+    for b in aday.get("sayfalar", [])[:3]:
+        if b in kullanilan: return []
+        if sablon in ("soz", "gorsel_soz"):
+            ad, m = vikisoz_metin(b)
+            if not m or len(m) < 400: return []
+            kaynaklar.append((ad, "Vikisöz", m))
+            ad2, m2 = vikipedi_metin(b)
+            if m2: kaynaklar.append((ad2, "Vikipedi", m2))
+        else:
+            ad, m = vikipedi_metin(b)
+            if not m or len(m) < 800: return []
+            kaynaklar.append((ad, "Vikipedi", m))
+    return kaynaklar
+
 def hazirla():
-    d = durum_oku(); sablon = SIRA[d["sayac"] % len(SIRA)]
+    slot, _ = aktif_slot()
+    if slot is None: print("Şu an bir paylaşım saati değil."); return False
+    d = durum_oku()
+    if any(p.get("slot") == slot for p in d["paylasilanlar"]): print("Bu saatin paylaşımı zaten yapıldı:", slot); return False
+    sablon = SIRA[d["sayac"] % len(SIRA)]
+    if sablon == "gorsel":
+        sablon = "gorsel_soz" if sum(1 for p in d["paylasilanlar"] if p.get("sablon") == "gorsel") % 2 == 0 else "gorsel_zihin"
     kullanilan = [p["konu"] for p in d["paylasilanlar"]] + [k for p in d["paylasilanlar"] for k in p.get("kaynaklar", [])]
-    print("Şablon:", sablon)
-    for tur in range(2):
-        adaylar = aday_iste(sablon, kullanilan)
+    print("Şablon:", sablon, "| saat:", slot)
+    for tur in range(3):
+        try: adaylar = aday_iste(sablon, kullanilan)
+        except Exception as e: print("aday hatası:", e); continue
         for aday in adaylar[:8]:
-            kaynaklar = []
-            for b in aday.get("sayfalar", [])[:3]:
-                if b in kullanilan: kaynaklar = []; break
-                if sablon == "soz":
-                    ad, m = vikisoz_metin(b)
-                    if not m or len(m) < 400: kaynaklar = []; break
-                    kaynaklar.append((ad, "Vikisöz", m))
-                    ad2, m2 = vikipedi_metin(b)
-                    if m2: kaynaklar.append((ad2, "Vikipedi", m2))
-                else:
-                    ad, m = vikipedi_metin(b)
-                    if not m or len(m) < 800: kaynaklar = []; break
-                    kaynaklar.append((ad, "Vikipedi", m))
-            if not kaynaklar: print("aday atlandı:", aday); continue
+            kaynaklar = kaynak_topla(sablon, aday, kullanilan)
+            if not kaynaklar: print("aday atlandı (kaynak yok/kullanılmış):", aday); continue
             try:
                 s = senaryo_iste(sablon, kaynaklar)
+                s["sablon"] = "gorsel" if sablon.startswith("gorsel") else sablon
+                if sablon.startswith("gorsel"): s["tur"] = sablon.split("_")[1]
+                if not bicim_denetle(s): print("biçim hatalı"); continue
+                # DENETİM 1 + 2: kaynak birebir kontrolü ve olgu denetimi
+                ok, neden = denetle(s, kaynaklar)
+                if not ok: print("[1-2] REDDEDİLDİ:", aday.get("tema"), "-", neden); continue
+                print("[1] kaynak kontrolü ✓  [2] olgu denetimi ✓")
+                # DENETİM 3: editör puanı + iyileştirme (iyileşen metin 1-2'den yeniden geçer)
+                puan, sorunlar, yeni = editor(s, kaynaklar)
+                print(f"[3] editör puanı: {puan}/10", sorunlar)
+                if puan < 7: print("[3] REDDEDİLDİ: puan düşük"); continue
+                if bicim_denetle(yeni) and denetle(yeni, kaynaklar)[0]: s = yeni; print("[3] düzeltilmiş metin yeniden doğrulandı ✓")
+                else: print("[3] düzeltme doğrulanamadı, orijinal metin kullanılıyor")
+                # Üretim + DENETİM 4: bitmiş çıktının görsel ve teknik kontrolü
+                os.makedirs(CIKTI, exist_ok=True); s["_kaynaklar"] = [(a, t) for a, t, _ in kaynaklar]
+                if s["sablon"] == "gorsel":
+                    os.makedirs(os.path.join(KOK, "gorseller"), exist_ok=True)
+                    yol = os.path.join("gorseller", simdi().strftime("%Y%m%d_%H%M") + ".jpg")
+                    kart_ciz(s, os.path.join(KOK, yol)); s["_gorsel"] = yol
+                    resim = open(os.path.join(KOK, yol), "rb").read()
+                    ok4, sor4 = gorsel_denetim(resim, "gorsel")
+                else:
+                    vid = os.path.join(CIKTI, "reels.mp4"); toplam = video_uret(s, vid)
+                    sure, ses, boyut = video_bilgi(vid)
+                    if abs(sure - toplam) > 1.5 or not ses or not boyut or os.path.getsize(vid) < 300_000:
+                        print("[4] teknik kontrol başarısız:", sure, ses, boyut); continue
+                    anlar = [sh["bas"] + sh["sure"] * .75 for sh in SAHNELER]
+                    resim, mont = video_kareleri(vid, anlar); mont.save(os.path.join(CIKTI, "onizleme.jpg"))
+                    ok4, sor4 = gorsel_denetim(resim, "video")
+                if not ok4:
+                    print("[4] görsel denetim REDDETTİ:", sor4)
+                    if s.get("_gorsel"): os.remove(os.path.join(KOK, s["_gorsel"]))
+                    continue
+                print("[4] görsel/teknik denetim ✓")
+                s["_slot"] = slot
+                with open(os.path.join(CIKTI, "bekleyen.json"), "w", encoding="utf-8") as f:
+                    json.dump(s, f, ensure_ascii=False, indent=2)
+                print("Hazır:", s.get("konu")); return True
             except Exception as e:
-                print("senaryo hatası:", e); continue
-            s["sablon"] = sablon
-            if not bicim_denetle(s): print("biçim hatalı"); continue
-            ok, neden = denetle(s, kaynaklar)
-            if not ok: print("DOĞRULAMA REDDETTİ:", aday.get("tema"), "-", neden); continue
-            s["_kaynaklar"] = [(a, t) for a, t, _ in kaynaklar]
-            os.makedirs(CIKTI, exist_ok=True)
-            sure = video_uret(s, os.path.join(CIKTI, "reels.mp4"), os.path.join(CIKTI, "onizleme.jpg"))
-            with open(os.path.join(CIKTI, "bekleyen.json"), "w", encoding="utf-8") as f:
-                json.dump(s, f, ensure_ascii=False, indent=2)
-            print(f"Hazır: {s.get('konu')} ({sure:.1f} sn)"); return True
-    print("Uygun içerik bulunamadı; bu tur paylaşım yok."); return False
+                print("hata, sonraki aday deneniyor:", repr(e)[:300])
+        kullanilan += [b for a in adaylar for b in a.get("sayfalar", [])]
+    print("4 denetimi geçen içerik bulunamadı; bu saatte paylaşım yok."); return False
 
 def aciklama_yap(s):
     kay = []
@@ -615,36 +780,51 @@ def aciklama_yap(s):
         site = "tr.wikiquote.org" if tur == "Vikisöz" else "tr.wikipedia.org"
         kay.append(f"{tur}: https://{site}/wiki/{quote(ad.replace(' ', '_'))}")
     et = " ".join(s.get("etiketler", [])[:8])
-    return (s["aciklama"].strip() + "\n\n📌 Kaydet, sonra tekrar izle.\n👉 " + KULLANICI + " ile her gün bir adım ileri.\n\n"
+    return (s["aciklama"].strip() + "\n\n📌 Kaydet, sonra tekrar bak.\n👉 " + KULLANICI + " ile her gün bir adım ileri.\n\n"
             "Kaynak: " + " | ".join(kay) + "\n\n" + et)[:2150]
 
 # ----------------------------------------------------------------- Instagram
-def paylas():
+def _bekle_hazir(cid, tok):
     import requests
-    yol = os.path.join(CIKTI, "bekleyen.json"); vid = os.path.join(CIKTI, "reels.mp4")
-    if not os.path.exists(yol): print("Bekleyen video yok."); return
-    s = json.load(open(yol, encoding="utf-8")); aciklama = aciklama_yap(s)
-    if str(os.environ.get("DRY_RUN", "")).lower() in ("1", "true", "evet"):
-        print("DRY_RUN: paylaşılmadı.\n" + aciklama); return
-    tok = os.environ["IG_ACCESS_TOKEN"]; uid = os.environ["IG_USER_ID"]
-    r = requests.post(f"{IG}/{IG_SURUM}/{uid}/media", data={"media_type": "REELS", "upload_type": "resumable", "caption": aciklama,
-                      "share_to_feed": "true", "thumb_offset": "3000", "access_token": tok}, timeout=60)
-    j = r.json(); print("kap:", j)
-    if "id" not in j: raise RuntimeError(j)
-    cid = j["id"]; uri = j.get("uri") or f"https://rupload.facebook.com/ig-api-upload/{IG_SURUM}/{cid}"
-    boyut = os.path.getsize(vid)
-    with open(vid, "rb") as f:
-        r = requests.post(uri, data=f, timeout=600, headers={"Authorization": f"OAuth {tok}", "offset": "0", "file_size": str(boyut)})
-    print("yükleme:", r.status_code, r.text[:300])
-    if not r.ok: raise RuntimeError("video yüklenemedi")
     for _ in range(60):
         time.sleep(10)
         st = requests.get(f"{IG}/{IG_SURUM}/{cid}", params={"fields": "status_code,status", "access_token": tok}, timeout=30).json()
         print("durum:", st)
-        if st.get("status_code") == "FINISHED": break
+        if st.get("status_code") == "FINISHED": return
         if st.get("status_code") in ("ERROR", "EXPIRED"): raise RuntimeError(st)
+    raise RuntimeError("işleme zaman aşımı")
+
+def paylas():
+    import requests
+    yol = os.path.join(CIKTI, "bekleyen.json")
+    if not os.path.exists(yol): print("Bekleyen içerik yok."); return
+    s = json.load(open(yol, encoding="utf-8")); aciklama = aciklama_yap(s)
+    d = durum_oku()
+    if any(p.get("slot") == s.get("_slot") for p in d["paylasilanlar"]): print("Bu saat zaten paylaşıldı."); return
+    if str(os.environ.get("DRY_RUN", "")).lower() in ("1", "true", "evet"):
+        print("DRY_RUN: paylaşılmadı.\n" + aciklama); return
+    _, hedef = aktif_slot()
+    if hedef is not None and simdi() < hedef:   # erken hazırlandıysa tam saatini bekle
+        bekle = (hedef - simdi()).total_seconds(); print(f"Paylaşım saatine {bekle/60:.1f} dk var, bekleniyor"); time.sleep(max(0, bekle))
+    tok = os.environ["IG_ACCESS_TOKEN"]; uid = os.environ["IG_USER_ID"]
+    if s["sablon"] == "gorsel":
+        url = f"https://raw.githubusercontent.com/{REPO}/{os.environ['GORSEL_SHA']}/{s['_gorsel']}"
+        j = requests.post(f"{IG}/{IG_SURUM}/{uid}/media", data={"image_url": url, "caption": aciklama, "access_token": tok}, timeout=60).json()
+        print("kap:", j)
+        if "id" not in j: raise RuntimeError(j)
+        cid = j["id"]
     else:
-        raise RuntimeError("işleme zaman aşımı")
+        vid = os.path.join(CIKTI, "reels.mp4")
+        j = requests.post(f"{IG}/{IG_SURUM}/{uid}/media", data={"media_type": "REELS", "upload_type": "resumable", "caption": aciklama,
+                          "share_to_feed": "true", "thumb_offset": "3000", "access_token": tok}, timeout=60).json()
+        print("kap:", j)
+        if "id" not in j: raise RuntimeError(j)
+        cid = j["id"]; uri = j.get("uri") or f"https://rupload.facebook.com/ig-api-upload/{IG_SURUM}/{cid}"
+        with open(vid, "rb") as f:
+            r = requests.post(uri, data=f, timeout=600, headers={"Authorization": f"OAuth {tok}", "offset": "0", "file_size": str(os.path.getsize(vid))})
+        print("yükleme:", r.status_code, r.text[:300])
+        if not r.ok: raise RuntimeError("video yüklenemedi")
+    _bekle_hazir(cid, tok)
     p = requests.post(f"{IG}/{IG_SURUM}/{uid}/media_publish", data={"creation_id": cid, "access_token": tok}, timeout=60).json()
     print("yayın:", p)
     if "id" not in p: raise RuntimeError(p)
@@ -653,16 +833,18 @@ def paylas():
         link = requests.get(f"{IG}/{IG_SURUM}/{p['id']}", params={"fields": "permalink", "access_token": tok}, timeout=30).json().get("permalink", "")
     except Exception: pass
     d = durum_oku(); d["sayac"] += 1
-    d["paylasilanlar"].append({"tarih": datetime.now(timezone(timedelta(hours=4))).strftime("%Y-%m-%d %H:%M"), "sablon": s["sablon"],
-                               "konu": s.get("konu", ""), "kaynaklar": [a for a, _ in s.get("_kaynaklar", [])], "id": p["id"], "link": link})
+    d["paylasilanlar"].append({"tarih": simdi().strftime("%Y-%m-%d %H:%M"), "slot": s.get("_slot"), "sablon": s["sablon"],
+                               "tur": s.get("tur", ""), "konu": s.get("konu", ""), "kaynaklar": [a for a, _ in s.get("_kaynaklar", [])],
+                               "id": p["id"], "link": link})
     durum_yaz(d); os.remove(yol); print("Paylaşıldı:", link)
 
 if __name__ == "__main__":
     k = sys.argv[1] if len(sys.argv) > 1 else ""
-    if k == "hazirla": sys.exit(0 if hazirla() else 0)
+    if k == "hazirla": hazirla()
     elif k == "paylas": paylas()
     elif k == "ornek":
         s = json.load(open(sys.argv[2], encoding="utf-8"))
         out = sys.argv[3] if len(sys.argv) > 3 else "ornek.mp4"
-        print("süre:", video_uret(s, out, out.replace(".mp4", "_onizleme.jpg")))
+        if s.get("sablon") == "gorsel": kart_ciz(s, out); print("kart:", out)
+        else: print("süre:", video_uret(s, out, out.replace(".mp4", "_onizleme.jpg")))
     else: print(__doc__)
