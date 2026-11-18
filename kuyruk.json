@@ -1,37 +1,5 @@
 [
  {
-  "konu": "_tanitim_2",
-  "renk": "#FFC83D",
-  "ust": "KATEGORİLER",
-  "etiket": "5 RENK",
-  "sag_ust": "TANIŞALIM  2/3",
-  "baslik": "Beş renk, beş dünya",
-  "liste": [
-   [
-    "BİLGİ · Genel kültür",
-    "#2F7BFF"
-   ],
-   [
-    "TARİH · Uygarlıklar, keşifler",
-    "#FF3B3B"
-   ],
-   [
-    "BİLİM · Uzay, fizik, insan",
-    "#B347FF"
-   ],
-   [
-    "DOĞA · Hayvanlar, gezegenimiz",
-    "#1FC75A"
-   ],
-   [
-    "DİL · Kelimelerin hikâyesi",
-    "#FFC400"
-   ]
-  ],
-  "aciklama": "Beş renk, beş dünya 🎨\n\n🔵 BİLGİ: Genel kültür ve şaşırtıcı gerçekler\n🔴 TARİH: Olaylar, uygarlıklar, keşifler\n🟣 BİLİM: Uzay, fizik, insan vücudu\n🟢 DOĞA: Hayvanlar, bitkiler, gezegenimiz\n🟡 DİL: Kelimelerin hikâyesi, Türkçe\n\nEn çok hangi renk seni çekiyor? Yorumlara yaz!\n\n#ozabilgi #bilgi #tarih #bilim #doğa",
-  "zemin": "#6C7CFF"
- },
- {
   "konu": "_tanitim_3",
   "renk": "#FFC83D",
   "ust": "TAKİP ET",
