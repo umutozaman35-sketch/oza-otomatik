@@ -1,45 +1,48 @@
 # OZA BİLGİ otomatik paylaşım ayarları
-# Bu dosyadaki değerleri değiştirerek sistemi kendinize göre ayarlayabilirsiniz.
 
-# Kartın altında görünecek Instagram kullanıcı adı
+# Görselin altında görünecek Instagram kullanıcı adı
 KULLANICI_ADI = "@oza_bilgi"
 
-# Kategoriler: etiket rengi, Claude'a verilecek konu tarifi ve hashtag'ler.
+# Kategoriler: etiket rengi, konu tarifi (Claude'a gider) ve hashtag'ler.
 KATEGORILER = {
-    "UZAY": {
-        "renk": "#6C7BFF",
-        "konu": "uzay, gezegenler, yıldızlar, astronomi",
-        "etiketler": "#uzay #astronomi #bilgi",
+    "BİLGİ": {
+        "renk": "#2F7BFF",
+        "konu": "genel kültür: icatlar, ilginç nesneler, gündelik hayattaki şaşırtıcı gerçekler, rekorlar, yapılar",
+        "etiketler": "#bilgi #genelkültür #ilginçbilgiler",
     },
     "TARİH": {
-        "renk": "#E8A33D",
-        "konu": "dünya ve Türk tarihi, eski uygarlıklar, ilginç tarihi olaylar",
-        "etiketler": "#tarih #tarihbilgisi #bilgi",
+        "renk": "#FF3B3B",
+        "konu": "tarih: önemli olaylar, antik uygarlıklar, keşifler, tarihi yapılar, Türk ve dünya tarihi",
+        "etiketler": "#tarih #tarihtebugün #bilgi",
     },
     "BİLİM": {
-        "renk": "#22C3A6",
-        "konu": "fizik, kimya, teknoloji, icatlar",
-        "etiketler": "#bilim #teknoloji #bilgi",
+        "renk": "#8B6CFF",
+        "konu": "bilim: uzay, fizik, kimya, insan vücudu, teknoloji, astronomi",
+        "etiketler": "#bilim #uzay #bilgi",
     },
     "DOĞA": {
-        "renk": "#4CC85A",
-        "konu": "hayvanlar, bitkiler, doğa olayları",
+        "renk": "#1FC75A",
+        "konu": "doğa: hayvanlar, bitkiler, okyanuslar, doğa olayları, coğrafya harikaları",
         "etiketler": "#doğa #hayvanlar #bilgi",
     },
-    "İNSAN": {
-        "renk": "#F2607A",
-        "konu": "insan vücudu, beyin, psikoloji, sağlık bilgisi (tavsiye değil, bilgi)",
-        "etiketler": "#insanvücudu #psikoloji #bilgi",
-    },
-    "DÜNYA": {
-        "renk": "#3BA7F0",
-        "konu": "ülkeler, coğrafya, şehirler, kültürler, rekorlar",
-        "etiketler": "#dünya #coğrafya #bilgi",
+    "DİL": {
+        "renk": "#FFC400",
+        "konu": "dil: kelimelerin kökeni, Türkçe, deyimler, dünya dilleri, yazı sistemleri",
+        "etiketler": "#dil #türkçe #kelimeler",
     },
 }
 
-# Kategorilerin sırası: her çalışmada sıradaki kategoriden bir bilgi kartı paylaşılır.
-SIRA = ["UZAY", "TARİH", "BİLİM", "DOĞA", "İNSAN", "DÜNYA"]
+# Kategorilerin sırası (her paylaşımda bir sonrakine geçer)
+SIRA = ["BİLGİ", "TARİH", "BİLİM", "DOĞA", "DİL"]
 
 # Metni yazan Claude modeli
 CLAUDE_MODEL = "claude-sonnet-5-5"
+
+# Saat dilimi
+SAAT_DILIMI = "Asia/Baku"
+
+# Renk doygunluğu (1.0 = orijinal, 1.4 = daha canlı)
+DOYGUNLUK = 1.4
+
+# Kart numarası buradan sonra devam eder (#001 elle paylaşıldı)
+BASLANGIC_NO = 1
