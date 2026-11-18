@@ -798,6 +798,21 @@ def _bekle_hazir(cid, tok):
         if st.get("status_code") in ("ERROR", "EXPIRED"): raise RuntimeError(st)
     raise RuntimeError("işleme zaman aşımı")
 
+def video_adrese_koy(vid):
+    """Videoyu depoya ekleyip raw.githubusercontent adresini döndürür (paylaşımdan sonra silinir)."""
+    ad = "videolar/" + simdi().strftime("%Y%m%d_%H%M%S") + ".mp4"
+    os.makedirs(os.path.join(KOK, "videolar"), exist_ok=True); shutil.copy(vid, os.path.join(KOK, ad))
+    g = lambda *a: subprocess.run(["git", *a], cwd=KOK, capture_output=True, text=True)
+    g("add", ad); g("commit", "-m", "Geçici Reels videosu"); g("pull", "--rebase"); p = g("push"); print("git push:", p.returncode, p.stderr[-200:])
+    sha = g("rev-parse", "HEAD").stdout.strip(); time.sleep(20)
+    return f"https://raw.githubusercontent.com/{REPO}/{sha}/{ad}"
+
+def videolari_temizle():
+    yol = os.path.join(KOK, "videolar")
+    if os.path.isdir(yol) and os.listdir(yol):
+        g = lambda *a: subprocess.run(["git", *a], cwd=KOK, capture_output=True, text=True)
+        g("rm", "-r", "-q", "videolar"); g("commit", "-m", "Geçici videoyu kaldır"); g("pull", "--rebase"); g("push")
+
 def paylas():
     import requests
     yol = os.path.join(CIKTI, "bekleyen.json")
@@ -824,10 +839,20 @@ def paylas():
         print("kap:", j)
         if "id" not in j: raise RuntimeError(j)
         cid = j["id"]; uri = j.get("uri") or f"https://rupload.facebook.com/ig-api-upload/{IG_SURUM}/{cid}"
-        with open(vid, "rb") as f:
-            r = requests.post(uri, data=f, timeout=600, headers={"Authorization": f"OAuth {tok}", "offset": "0", "file_size": str(os.path.getsize(vid))})
-        print("yükleme:", r.status_code, r.text[:300])
-        if not r.ok: raise RuntimeError("video yüklenemedi")
+        veri = open(vid, "rb").read()
+        r = requests.post(uri, data=veri, timeout=600, headers={"Authorization": f"OAuth {tok}", "offset": "0", "file_size": str(len(veri)),
+                                                                "Content-Type": "application/octet-stream"})
+        print("yükleme (dosya):", r.status_code, r.text[:300])
+        if not r.ok:   # B planı: videoyu depoya koyup herkese açık adresten yüklet
+            url = video_adrese_koy(vid)
+            r = requests.post(uri, timeout=600, headers={"Authorization": f"OAuth {tok}", "file_url": url})
+            print("yükleme (adres):", r.status_code, r.text[:300])
+            if not r.ok:   # C planı: klasik video_url ile yeni kap
+                j = requests.post(f"{IG}/{IG_SURUM}/{uid}/media", data={"media_type": "REELS", "video_url": url, "caption": aciklama,
+                                  "share_to_feed": "true", "thumb_offset": "3000", "access_token": tok}, timeout=60).json()
+                print("kap (video_url):", j)
+                if "id" not in j: raise RuntimeError(j)
+                cid = j["id"]
     _bekle_hazir(cid, tok)
     p = requests.post(f"{IG}/{IG_SURUM}/{uid}/media_publish", data={"creation_id": cid, "access_token": tok}, timeout=60).json()
     print("yayın:", p)
@@ -841,6 +866,8 @@ def paylas():
                                "tur": s.get("tur", ""), "konu": s.get("konu", ""), "kaynaklar": [a for a, _ in s.get("_kaynaklar", [])],
                                "id": p["id"], "link": link})
     durum_yaz(d); os.remove(yol); print("Paylaşıldı:", link)
+    try: videolari_temizle()
+    except Exception as e: print("temizlik:", e)
 
 if __name__ == "__main__":
     sys.stdout.reconfigure(line_buffering=True)
