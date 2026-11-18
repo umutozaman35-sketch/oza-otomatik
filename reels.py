@@ -110,6 +110,8 @@ def jetonlar(metin):
     for parca in re.split(r"(\*)", metin):
         if parca == "*": altin = not altin; continue
         for k in parca.split():
+            if out and re.fullmatch(r"[.,!?;:…)\]”\"'»]+", k):   # noktalama önceki kelimeye yapışır
+                out[-1] = (out[-1][0] + k, out[-1][1]); continue
             out.append((k, altin))
     return out
 
@@ -149,7 +151,7 @@ def kelime_say(m): return len(re.sub(r"[*“”\"]", "", m).split())
 # ----------------------------------------------------------------- sahne elemanları
 STIL = {  # (font fabrikası, renk, altın)
     "ana": (lambda s: inter("SemiBold", int(52 * s)), ACIK, False),
-    "yan": (lambda s: inter("Medium", int(40 * s)), SOL, False),
+    "yan": (lambda s: inter("SemiBold", int(42 * s)), (195, 195, 195), False),
     "vurgu": (lambda s: pop(int(66 * s)), ACIK, True),
     "soz": (lambda s: pop(int(80 * s)), ACIK, False),
     "iddia": (lambda s: pop(int(72 * s)), ACIK, False),
@@ -185,12 +187,12 @@ def okuma(el):
     if t in ("metin", "kanca"): return max(.9, kelime_say(el["metin"]) * .32)
     return {"pill": .3, "cizgi": .15, "baslik": .7, "cubuk": 2.6, "damga": 1.2, "halka": 0, "logo": .5, "kulp": .5, "buton": .5}[t]
 
-def sahne_kur(els, bekle=1.6, ust_sinir=400, alt_sinir=1560, sabit_sure=None, boslik=38):
+def sahne_kur(els, bekle=1.6, ust_sinir=330, alt_sinir=1640, sabit_sure=None, boslik=34):
     s = 1.0
     while True:
         for el in els: el_hazirla(el, s)
         top = sum(e["h"] for e in els) + boslik * (len(els) - 1)
-        if top <= alt_sinir - ust_sinir or s < .62: break
+        if top <= alt_sinir - ust_sinir or s < .84: break
         s *= .92
     y = ust_sinir + max(0, (alt_sinir - ust_sinir - top) // 2)
     t = .15
@@ -521,10 +523,10 @@ SEMA = {
  "liste": '{"sablon":"liste","konu":"tema adı","etiket":"YASA|KURAL|TAKTİK|ETKİ","kanca":["4-6 kısa satır, her biri en fazla 16 karakter; vurgu kelimeleri *yıldızla*"],'
           '"maddeler":[{"baslik":"en fazla 20 karakter","kaynak":"Vikipedi başlığı","alinti":{"metin":"isteğe bağlı, kaynakta geçen kısa ifade","kisi":"kim, yıl"} veya null,'
           '"cubuk":[{"ad":"ÇABA","deger":20},{"ad":"SONUÇ","deger":80}] veya null (yalnız kaynakta açıkça sayı varsa),'
-          '"satirlar":["2-3 cümle, her biri en fazla 80 karakter; *vurgu* olabilir"],"vurgu":"en fazla 36 karakter, uygulanabilir eylem"} x3],'
+          '"satirlar":["en fazla 2 kısa cümle, her biri en fazla 70 karakter; *vurgu* olabilir"],"vurgu":"en fazla 32 karakter, uygulanabilir eylem"} x3],'
           '"kapanis":{"soru":"en fazla 26 karakter, *vurgu*","alt":"yorum çağrısı, en fazla 45 karakter"},"aciklama":"Instagram açıklaması: 2-3 cümle + soru","etiketler":["#..." 6-8 adet]}',
  "mit": '{"sablon":"mit","konu":"tema","kanca":["4-6 kısa satır, en fazla 16 karakter, *vurgu*"],"maddeler":[{"iddia":"en fazla 60 karakter","sonuc":"MİT|GERÇEK","kaynak":"Vikipedi başlığı",'
-        '"aciklama":["2-3 cümle, her biri en fazla 80 karakter"]} x3],"kapanis":{...},"aciklama":"...","etiketler":[...]}',
+        '"aciklama":["en fazla 2 kısa cümle, her biri en fazla 70 karakter"]} x3],"kapanis":{...},"aciklama":"...","etiketler":[...]}',
  "soz": '{"sablon":"soz","konu":"kişi adı","kaynak":"Vikisöz sayfa başlığı","kanca":["4-6 kısa satır"],"soz":"VİKİSÖZ METNİNDEN KELİMESİ KELİMESİNE kopyalanmış söz (en fazla 160 karakter); en güçlü 1-3 kelimeyi *yıldızla*",'
         '"kisi":"kişinin adı","hikaye":["kişinin hayatından 3-4 kısa gerçek, her biri en fazla 80 karakter, yalnız Vikipedi metninden"],'
         '"ders":["en fazla 36 karakterlik güçlü ders cümlesi","1-2 açıklama cümlesi"],"kapanis":{...},"aciklama":"...","etiketler":[...]}',
@@ -674,9 +676,10 @@ def video_kareleri(yol, anlar):
 def gorsel_denetim(resim, tur):
     """4. denetim: son çıktının görüntüsüne bakılır (taşan/kesik yazı, yazım hatası, boş kare, okunurluk)."""
     s = claude("Bu, bir Instagram " + ("Reels videosundan alınmış sıralı karelerin (soldan sağa, yukarıdan aşağı) montajı. " if tur == "video" else "görsel gönderisi. ") +
-               "Yayın öncesi son kalite kontrolünü yap. Şunlara bak: kesilmiş, taşmış ya da üst üste binmiş yazı; okunmayan yazı; Türkçe yazım/harf hatası "
-               "(İ/ı, ş, ğ dahil); bozuk karakter ya da kutucuk (□); boş veya bozuk kare; profesyonel görünmeyen bir şey. Geçiş anında yarı saydam görünen yazılar normaldir. "
-               'Sadece JSON döndür: {"gecerli": true/false, "sorunlar": ["..."]}', 800, resim=resim)
+               "Yayın öncesi son kalite kontrolünü yap. REDDETME sebepleri: kesilmiş, ekrandan taşmış ya da üst üste binmiş yazı; Türkçe yazım/harf/noktalama hatası "
+               "(İ/ı, ş, ğ dahil); bozuk karakter ya da kutucuk (□); boş veya bozuk kare; anlamsız/yarım cümle. Montaj küçültülmüş olduğu için yazıların küçük "
+               "görünmesi sorun değildir (gerçek video 1080x1920); tasarım tercihlerini (renk, gri ikincil yazı) sorun sayma. Geçiş anında yarı saydam yazı normaldir. "
+               'Sadece JSON döndür: {"gecerli": true/false, "sorunlar": ["yalnız reddetme sebepleri"], "oneriler": ["küçük iyileştirmeler"]}', 800, resim=resim)
     return bool(s.get("gecerli")), s.get("sorunlar", [])
 
 # ----------------------------------------------------------------- zamanlama
@@ -840,6 +843,7 @@ def paylas():
     durum_yaz(d); os.remove(yol); print("Paylaşıldı:", link)
 
 if __name__ == "__main__":
+    sys.stdout.reconfigure(line_buffering=True)
     k = sys.argv[1] if len(sys.argv) > 1 else ""
     if k == "hazirla": hazirla()
     elif k == "paylas": paylas()
