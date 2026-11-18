@@ -2,7 +2,8 @@ name: OZA BİLGİ otomatik paylaşım
 
 on:
   schedule:
-    - cron: "0 6-18/3 * * *"
+    # Saatler UTC'dir. Bakü saatiyle 10:00, 12:00, 14:00, 16:00, 18:00, 20:00, 22:00 (günde 7 kart).
+    - cron: "7 6-18/2 * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -17,33 +18,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
       - name: Paketleri kur
         run: pip install requests pillow
-      - name: Bilgiyi yaz ve kartı üret
+
+      - name: Bilgiyi seç, Vikipedi'den doğrula, kartı üret
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python main.py hazirla
-      - name: Deneme kartını kaydet
-        if: vars.DRY_RUN == '1'
-        uses: actions/upload-artifact@v4
-        with:
-          name: deneme-karti
-          path: cikti/*.jpg
-      - name: Görseli depoya yükle
+
+      - name: Kartı depoya yükle
         id: gorsel
         run: |
           if [ -f cikti/bekleyen.json ]; then
             git config user.name "oza-bot"
             git config user.email "oza-bot@users.noreply.github.com"
             git add cikti
-            git commit -m "Yeni gönderi görseli"
+            git commit -m "Yeni bilgi kartı"
             git push
             echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
             echo "var=1" >> "$GITHUB_OUTPUT"
           fi
+
       - name: Instagram'a paylaş
         if: steps.gorsel.outputs.var == '1'
         env:
@@ -54,9 +54,10 @@ jobs:
         run: |
           sleep 15
           python main.py paylas
+
       - name: Durumu kaydet
         if: steps.gorsel.outputs.var == '1'
         run: |
-          git add -A paylasilanlar.json cikti
+          git add -A cikti paylasilanlar.json
           git commit -m "Paylaşım kaydı" || true
           git push
