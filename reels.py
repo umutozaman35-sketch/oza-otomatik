@@ -408,6 +408,71 @@ def muzik(sure, yol, gecisler, tohum):
         w.setnchannels(2); w.setsampwidth(2); w.setframerate(SR); w.writeframes((out * 32767).astype("<i2").tobytes())
     return bpm
 
+# ----------------------------------------------------------------- seslendirme (Azure, müzik yok)
+def tts(metin, yol):
+    """Azure Neural TTS ile metni seslendirir (24 kHz mono wav)."""
+    import requests
+    from xml.sax.saxutils import escape
+    ses = os.environ.get("AZURE_SES") or "tr-TR-AhmetNeural"
+    bolge = os.environ.get("AZURE_SPEECH_REGION") or "westeurope"
+    ssml = (f"<speak version='1.0' xml:lang='tr-TR'><voice name='{ses}'><prosody rate='+4%'>"
+            f"{escape(metin)}</prosody></voice></speak>")
+    for deneme in range(3):
+        r = requests.post(f"https://{bolge}.tts.speech.microsoft.com/cognitiveservices/v1", data=ssml.encode("utf-8"), timeout=60,
+                          headers={"Ocp-Apim-Subscription-Key": os.environ["AZURE_SPEECH_KEY"], "Content-Type": "application/ssml+xml",
+                                   "X-Microsoft-OutputFormat": "riff-24khz-16bit-mono-pcm", "User-Agent": "hedeflerin-yolunda"})
+        if r.ok and len(r.content) > 2000:
+            open(yol, "wb").write(r.content); return
+        print("TTS hata:", r.status_code, r.text[:200]); time.sleep(3)
+    raise RuntimeError("seslendirme üretilemedi")
+
+def wav_oku(yol):
+    with wave.open(yol, "rb") as w:
+        return np.frombuffer(w.readframes(w.getnframes()), dtype="<i2").astype(np.float32) / 32768, w.getframerate()
+
+def temiz(m): return re.sub(r"\s+", " ", m.replace("*", "")).strip()
+
+def seslendirme_metinleri(s, sahneler):
+    """Her sahne için okunacak metin (Claude'un yazdığı seslendirme; yoksa ekrandaki metin)."""
+    sl = s.get("seslendirme") or {}; bol = list(sl.get("bolumler") or [])
+    out = [sl.get("kanca") or " ".join(temiz(x) for x in s["kanca"])]
+    if s["sablon"] == "egzersiz":
+        out.append(bol[0] if bol else " ".join(s.get("giris", [])) + " Şimdi benimle birlikte yap.")
+        adim = s["adimlar"][:4]; tur = max(1, min(3, int(s.get("tur", 2))))
+        for k in range(tur):
+            for a in adim: out.append(temiz(a["metin"]))
+        out.append(bol[1] if len(bol) > 1 else " ".join(s.get("fayda", [])))
+    else:
+        for i in range(len(sahneler) - 2):
+            if i < len(bol): out.append(bol[i])
+            else: out.append(" ".join(temiz(e.get("metin", "")) for e in sahneler[i + 1]["els"] if e.get("metin")))
+    out.append((s.get("kapanis") or {}).get("seslendirme") or sl.get("kapanis") or temiz((s.get("kapanis") or {}).get("soru", "")) + " Takip etmeyi unutma.")
+    return [temiz(x) for x in out]
+
+def ses_hazirla(s, sahneler, yol):
+    """Sahneleri sese göre uzatır ve tek ses izi üretir. Anahtar yoksa sessiz iz üretir."""
+    SR = 24000; parcalar = [None] * len(sahneler)
+    if os.environ.get("AZURE_SPEECH_KEY"):
+        metinler = seslendirme_metinleri(s, sahneler)
+        for i, (sh, m) in enumerate(zip(sahneler, metinler)):
+            if not m: continue
+            p = yol + f".{i}.wav"; tts(m, p); a, SR = wav_oku(p); os.remove(p)
+            parcalar[i] = a
+            sabit = sh["els"] and any(e["tip"] == "halka" for e in sh["els"])
+            if not sabit: sh["sure"] = max(sh["sure"], .35 + len(a) / SR + .8)
+    else:
+        print("UYARI: AZURE_SPEECH_KEY yok, video sessiz üretiliyor.")
+    t = 0
+    for sh in sahneler: sh["bas"] = t; t += sh["sure"]
+    iz = np.zeros(int((t + .5) * SR), dtype=np.float32)
+    for sh, a in zip(sahneler, parcalar):
+        if a is None: continue
+        b = int((sh["bas"] + .35) * SR); a = a[:max(0, len(iz) - b)]; iz[b:b + len(a)] += a
+    if np.abs(iz).max() > 0: iz = iz / np.abs(iz).max() * .89
+    with wave.open(yol, "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR); w.writeframes((iz * 32767).astype("<i2").tobytes())
+    return t
+
 # ----------------------------------------------------------------- video
 def ffmpeg_yolu():
     p = shutil.which("ffmpeg")
@@ -419,7 +484,7 @@ def video_uret(senaryo, cikti, onizleme=None):
     _hazir(); SAHNELER, TOPLAM = sahneler_olustur(senaryo)
     os.makedirs(os.path.dirname(os.path.abspath(cikti)), exist_ok=True)
     wav = cikti + ".wav"
-    muzik(TOPLAM, wav, [s["bas"] for s in SAHNELER], abs(hash(json.dumps(senaryo, ensure_ascii=False))) % 10**6)
+    TOPLAM = ses_hazirla(senaryo, SAHNELER, wav)
     if onizleme:
         anlar = [s["bas"] + s["sure"] * .8 for s in SAHNELER]
         kucuk = [kare(int(a * FPS)).resize((270, 480)) for a in anlar]
@@ -543,7 +608,12 @@ def senaryo_iste(sablon, kaynaklar):
              "KURALLAR:\n- Her bilgi, sayı, tarih ve isim YALNIZCA aşağıdaki kaynak metinlerde açıkça yazanlardan gelsin. Kaynakta olmayan hiçbir şeyi ekleme.\n"
              "- Söz varsa, kaynak metinde nasıl yazıyorsa öyle kopyala (kelimeler aynı).\n"
              "- Başka bir hesabın içeriğini kopyalama; cümleler özgün olsun.\n- Kanca ilk 2 saniyede merak uyandırsın.\n"
-             f"- Sadece şu yapıda JSON döndür:\n{SEMA[sablon]}\n\n{metinler}")
+             + ("" if sablon.startswith("gorsel") else
+                "- JSON'a ayrıca \"seslendirme\" alanı ekle: {\"kanca\": \"...\", \"bolumler\": [\"...\"], \"kapanis\": \"...\"}. Bunlar videoyu "
+                "gerçek bir insanın okuyacağı metinlerdir: doğal konuşma dili, kısa cümleler, ekrandaki yazıyla aynı bilgiyi verir ama birebir okumaz, "
+                "yeni bilgi eklemez. Sayıları yazıyla yaz (ör. yüzde seksen). 'bolumler' sayısı: liste ve mit için 3 (her madde için 1, 12-35 kelime), "
+                "soz için 3 (söz, kimdir, bugün için), egzersiz için 2 (giriş, fayda). kanca 8-18 kelime, kapanis 8-15 kelime (takip et çağrısı dahil).\n")
+             + f"- Sadece şu yapıda JSON döndür:\n{SEMA[sablon]}\n\n{metinler}")
     return claude(istem, 4000)
 
 def denetle(senaryo, kaynaklar):
