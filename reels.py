@@ -873,11 +873,30 @@ def paylas():
     try: videolari_temizle()
     except Exception as e: print("temizlik:", e)
 
+def yayinla(cid):
+    """Instagram'da hazır bekleyen bir kabı (container) doğrudan yayınlar."""
+    import requests
+    tok = os.environ["IG_ACCESS_TOKEN"]; uid = os.environ["IG_USER_ID"]
+    print("kap durumu:", requests.get(f"{IG}/{IG_SURUM}/{cid}", params={"fields": "status_code,status", "access_token": tok}, timeout=30).json())
+    p = {}
+    for deneme in range(4):
+        p = requests.post(f"{IG}/{IG_SURUM}/{uid}/media_publish", data={"creation_id": cid, "access_token": tok}, timeout=60).json()
+        print("yayın:", p)
+        if "id" in p: break
+        time.sleep(20 * (deneme + 1))
+    if "id" not in p: raise RuntimeError(p)
+    link = requests.get(f"{IG}/{IG_SURUM}/{p['id']}", params={"fields": "permalink", "access_token": tok}, timeout=30).json().get("permalink", "")
+    d = durum_oku(); d["sayac"] += 1
+    d["paylasilanlar"].append({"tarih": simdi().strftime("%Y-%m-%d %H:%M"), "slot": "elle-" + simdi().strftime("%Y-%m-%d %H:%M"), "sablon": "liste",
+                               "konu": "elle yayınlanan kap " + cid, "kaynaklar": [], "id": p["id"], "link": link})
+    durum_yaz(d); print("Paylaşıldı:", link)
+
 if __name__ == "__main__":
     sys.stdout.reconfigure(line_buffering=True)
     k = sys.argv[1] if len(sys.argv) > 1 else ""
     if k == "hazirla": hazirla()
     elif k == "paylas": paylas()
+    elif k == "yayinla": yayinla(sys.argv[2])
     elif k == "ornek":
         s = json.load(open(sys.argv[2], encoding="utf-8"))
         out = sys.argv[3] if len(sys.argv) > 3 else "ornek.mp4"
