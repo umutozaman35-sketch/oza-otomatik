@@ -9,7 +9,12 @@ on:
     # Hafta sonu Bakü 11:00, 15:00, 19:00, 22:00
     - cron: "50 6,10,14,17 * * 0,6"
     - cron: "25 7,11,15,18 * * 0,6"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      kap_id:
+        description: "Instagram'da hazır bekleyen kap ID'si (boş bırak = normal paylaşım)"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -37,7 +42,8 @@ jobs:
       - name: İçeriği seç, üret ve 4 kalite denetiminden geçir
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python reels.py hazirla
+        run: |
+          if [ -n "${{ inputs.kap_id }}" ]; then echo "Hazır kap yayınlanacak"; else python reels.py hazirla; fi
 
       - name: Görseli depoya yükle (görsel gönderiyse)
         id: gorsel
@@ -68,7 +74,8 @@ jobs:
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           DRY_RUN: ${{ vars.DRY_RUN }}
           GORSEL_SHA: ${{ steps.gorsel.outputs.sha }}
-        run: python reels.py paylas
+        run: |
+          if [ -n "${{ inputs.kap_id }}" ]; then python reels.py yayinla "${{ inputs.kap_id }}"; else python reels.py paylas; fi
 
       - name: Durumu kaydet
         if: always()
