@@ -1,9 +1,14 @@
-name: HEDEFLERİN YOLUNDA otomatik Reels
+name: HEDEFLERİN YOLUNDA otomatik paylaşım
 
 on:
   schedule:
-    # Saatler UTC'dir. Bakü saatiyle 12:17 ve 20:17 (günde 2 Reels).
-    - cron: "17 8,16 * * *"
+    # Saatler UTC'dir (Bakü = UTC+4). Her saat 10 dk önce hazırlanır, tam saatinde paylaşılır; 30 dk sonra yedek tetikleme.
+    # Hafta içi Bakü 12:00, 17:00, 22:00
+    - cron: "50 7,12,17 * * 1-5"
+    - cron: "25 8,13,18 * * 1-5"
+    # Hafta sonu Bakü 11:00, 15:00, 19:00, 22:00
+    - cron: "50 6,10,14,17 * * 0,6"
+    - cron: "25 7,11,15,18 * * 0,6"
   workflow_dispatch: {}
 
 permissions:
@@ -14,9 +19,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  reels:
+  paylas:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
 
@@ -29,32 +34,46 @@ jobs:
           pip install requests pillow numpy imageio-ffmpeg
           curl -sSL -o Poppins-Bold.ttf https://github.com/google/fonts/raw/main/ofl/poppins/Poppins-Bold.ttf
 
-      - name: Konuyu seç, Vikipedi/Vikisöz'den doğrula, videoyu üret
+      - name: İçeriği seç, üret ve 4 kalite denetiminden geçir
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python reels.py hazirla
 
-      - name: Videoyu kontrol için sakla
+      - name: Görseli depoya yükle (görsel gönderiyse)
+        id: gorsel
+        run: |
+          git config user.name "oza-bot"
+          git config user.email "oza-bot@users.noreply.github.com"
+          if [ -n "$(git status --porcelain gorseller 2>/dev/null)" ]; then
+            git add gorseller
+            git commit -m "Yeni görsel gönderi"
+            git pull --rebase
+            git push
+            echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+            sleep 15
+          fi
+
+      - name: Kontrol için çıktıyı sakla
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: reels
+          name: cikti
           path: cikti_reels/
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Instagram'a Reels olarak paylaş
+      - name: Instagram'a paylaş
         env:
           IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
           IG_USER_ID: ${{ secrets.IG_USER_ID }}
           DRY_RUN: ${{ vars.DRY_RUN }}
+          GORSEL_SHA: ${{ steps.gorsel.outputs.sha }}
         run: python reels.py paylas
 
       - name: Durumu kaydet
+        if: always()
         run: |
-          git config user.name "oza-bot"
-          git config user.email "oza-bot@users.noreply.github.com"
           git add reels_durum.json 2>/dev/null || true
-          git commit -m "Reels paylaşım kaydı" || true
+          git commit -m "Paylaşım kaydı" || true
           git pull --rebase || true
           git push || true
