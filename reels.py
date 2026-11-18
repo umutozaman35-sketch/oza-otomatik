@@ -481,6 +481,7 @@ def sayilar(m): return set(re.findall(r"\d+(?:[.,]\d+)?", m.replace("*", "")))
 # ----------------------------------------------------------------- Claude
 def claude(istem, max_tokens=4000, resim=None):
     import requests, base64
+    max_tokens = max(max_tokens, 16000)   # model düşünme payı kullanabildiği için geniş bütçe
     icerik = istem
     if resim is not None:
         icerik = [{"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(resim).decode()}},
@@ -491,13 +492,13 @@ def claude(istem, max_tokens=4000, resim=None):
             json={"model": MODEL, "max_tokens": max_tokens, "messages": [{"role": "user", "content": icerik}]})
         if not r.ok:
             print("Claude hata:", r.status_code, r.text[:300]); time.sleep(5); continue
-        metin = "".join(b.get("text", "") for b in r.json().get("content", []))
+        j = r.json(); metin = "".join(b.get("text", "") for b in j.get("content", []) if b.get("type") == "text")
         dec = json.JSONDecoder()
         for i, ch in enumerate(metin):
             if ch in "[{":
                 try: return dec.raw_decode(metin[i:])[0]
                 except ValueError: continue
-        print("JSON bulunamadı:", metin[:300])
+        print("JSON bulunamadı:", j.get("stop_reason"), [b.get("type") for b in j.get("content", [])], metin[:300])
     raise RuntimeError("Claude yanıtı alınamadı")
 
 KITLE = ("Instagram hesabı: HEDEFLERİN YOLUNDA (@hedeflerinyolunda). Hedef kitle: 16-28 yaş, hırslı Türk gençleri. "
