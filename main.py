@@ -58,7 +58,7 @@ def durum_yaz(d):
 
 
 # ---------------------------------------------------------------- Claude
-def claude(istem, max_tokens=900):
+def claude(istem, max_tokens=4000):
     r = requests.post(
         "https://api.anthropic.com/v1/messages",
         headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"],
@@ -66,13 +66,17 @@ def claude(istem, max_tokens=900):
                  "content-type": "application/json"},
         json={"model": A.CLAUDE_MODEL, "max_tokens": max_tokens,
               "messages": [{"role": "user", "content": istem}]},
-        timeout=120)
+        timeout=180)
     r.raise_for_status()
-    metin = "".join(p.get("text", "") for p in r.json()["content"])
-    m = re.search(r"[\[{].*[\]}]", metin, re.S)
-    if not m:
-        raise RuntimeError("Claude JSON döndürmedi: " + metin[:300])
-    return json.loads(m.group(0))
+    j = r.json()
+    metin = "".join(p.get("text", "") for p in j["content"] if p.get("type") == "text")
+    for i, ch in enumerate(metin):
+        if ch in "[{":
+            try:
+                return json.JSONDecoder().raw_decode(metin[i:])[0]
+            except ValueError:
+                continue
+    raise RuntimeError(f"Claude JSON döndürmedi ({j.get('stop_reason')}): " + metin[:300])
 
 
 KONU_ISTEMI = """Türkçe bir Instagram bilgi sayfası için konu öneriyorsun.
@@ -333,7 +337,7 @@ def hazirla():
         try:
             oneriler = claude(KONU_ISTEMI.format(
                 kategori=kategori, konu=A.KATEGORILER[kategori]["konu"],
-                kullanilan=", ".join(kullanilan[-300:]) or "(yok)"), 600)
+                kullanilan=", ".join(kullanilan[-300:]) or "(yok)"))
         except Exception as e:
             print(f"[{kategori}] konu önerisi alınamadı: {e}")
             continue
