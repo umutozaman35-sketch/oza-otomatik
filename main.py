@@ -276,7 +276,7 @@ def kart_ciz(kategori, baslik, ozet, numara, cikti, etiket=None, ust="BİLİYOR 
     d.rectangle([bx, 78, bx + 4, 118], fill=ALTIN2)
     aralikli_yaz(d, (bx + 18, 78), "BİLGİ", f("SemiBold", 38), ALTIN2, 6)
     nf = f("Medium", 23)
-    no = sag_ust or f"BİLGİ KARTI  #{numara:03d}"
+    no = sag_ust or "BİLGİ KARTI"
     nw = aralikli_genislik(d, no, nf, 2)
     aralikli_yaz(d, (W - X - nw, 88), no, nf, (120, 132, 182), 2)
     d.rectangle([X, 162, W - X, 163], fill=tuple(int(c * 0.55) + 18 for c in T["acik"]))
