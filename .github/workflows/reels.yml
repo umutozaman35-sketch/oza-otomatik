@@ -1,0 +1,60 @@
+name: HEDEFLERİN YOLUNDA otomatik Reels
+
+on:
+  schedule:
+    # Saatler UTC'dir. Bakü saatiyle 12:17 ve 20:17 (günde 2 Reels).
+    - cron: "17 8,16 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: oza-paylasim
+  cancel-in-progress: false
+
+jobs:
+  reels:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Paketleri ve yazı tipini kur
+        run: |
+          pip install requests pillow numpy imageio-ffmpeg
+          curl -sSL -o Poppins-Bold.ttf https://github.com/google/fonts/raw/main/ofl/poppins/Poppins-Bold.ttf
+
+      - name: Konuyu seç, Vikipedi/Vikisöz'den doğrula, videoyu üret
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python reels.py hazirla
+
+      - name: Videoyu kontrol için sakla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reels
+          path: cikti_reels/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Instagram'a Reels olarak paylaş
+        env:
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          DRY_RUN: ${{ vars.DRY_RUN }}
+        run: python reels.py paylas
+
+      - name: Durumu kaydet
+        run: |
+          git config user.name "oza-bot"
+          git config user.email "oza-bot@users.noreply.github.com"
+          git add reels_durum.json 2>/dev/null || true
+          git commit -m "Reels paylaşım kaydı" || true
+          git pull --rebase || true
+          git push || true
