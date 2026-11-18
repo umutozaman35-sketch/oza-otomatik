@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OZA BİLGİ · Her gün bilmediğin bir bilgi</title>
+<meta name="description" content="OZA BİLGİ: tarih, bilim, doğa, dil ve genel kültürden kısa, şaşırtıcı bilgi kartları. Her bilgi Vikipedi'den kontrol edilir.">
+<meta property="og:title" content="OZA BİLGİ">
+<meta property="og:description" content="Her gün bilmediğin bir bilgi. Bilgi · Tarih · Bilim · Doğa · Dil">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--zemin:#070A1C;--yuzey:#11173A;--cizgi:#26306A;--yazi:#F3F5FF;--soluk:#A9B3DC;--altin:#FFC83D}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(1200px 700px at 100% 0,#26308A 0,transparent 60%),radial-gradient(900px 600px at 0 100%,#141A48 0,transparent 60%),var(--zemin);background-attachment:fixed;color:var(--yazi);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:var(--altin)}
+.kap{max-width:1180px;margin:0 auto;padding:0 20px}
+header{padding:28px 0 8px}
+.ust{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--yazi)}
+.logo b{font-size:26px;font-weight:800;letter-spacing:-.5px}
+.logo span{font-size:18px;font-weight:600;letter-spacing:5px;color:var(--altin);border-left:3px solid var(--altin);padding-left:10px}
+.ig{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border-radius:999px;background:var(--altin);color:#1A1405;font-weight:700;text-decoration:none;font-size:15px}
+.giris{padding:56px 0 28px;max-width:720px}
+.giris .kicker{color:var(--altin);font-weight:700;letter-spacing:4px;font-size:13px}
+.giris h1{font-size:clamp(36px,6vw,64px);line-height:1.05;margin:14px 0 16px;font-weight:800;letter-spacing:-1.5px}
+.giris p{color:var(--soluk);font-size:18px;line-height:1.6;margin:0}
+.arac{position:sticky;top:0;z-index:5;background:rgba(7,10,28,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--cizgi);padding:14px 0;margin-bottom:28px}
+.arac .kap{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.cip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--cizgi);background:var(--yuzey);color:var(--yazi);font:600 14px Inter,sans-serif;letter-spacing:1px;cursor:pointer}
+.cip i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.cip[aria-pressed="true"]{border-color:var(--yazi);background:#1D2560}
+.ara{flex:1 1 220px;min-width:200px;position:relative}
+.ara input{width:100%;min-height:44px;border-radius:999px;border:1px solid var(--cizgi);background:var(--yuzey);color:var(--yazi);font:500 15px Inter,sans-serif;padding:0 18px 0 44px}
+.ara input::placeholder{color:#8792C2}
+.ara svg{position:absolute;left:16px;top:50%;transform:translateY(-50%)}
+.sayi{color:var(--soluk);font-size:14px;margin:0 0 16px}
+.izgara{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;padding-bottom:60px}
+.kart{display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;text-align:left;color:inherit;border-radius:14px;overflow:hidden;transition:transform .15s}
+.kart:hover{transform:translateY(-3px)}
+.kart img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--yuzey);border-radius:14px}
+.kart .alt{padding:10px 2px 0;font-size:14px;color:var(--soluk);display:flex;gap:8px;align-items:center}
+.kart .alt i{width:10px;height:10px;border-radius:3px;flex:0 0 10px}
+.bos{color:var(--soluk);text-align:center;padding:60px 0}
+dialog{border:0;padding:0;background:transparent;max-width:min(980px,94vw);width:100%;color:var(--yazi)}
+dialog::backdrop{background:rgba(3,5,15,.82)}
+.pen{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:var(--yuzey);border:1px solid var(--cizgi);border-radius:18px;overflow:hidden}
+.pen img{width:100%;height:100%;object-fit:cover;display:block}
+.pen .metin{padding:28px;display:flex;flex-direction:column;gap:14px;max-height:80vh;overflow:auto}
+.pen h2{margin:0;font-size:26px;line-height:1.2}
+.pen p{margin:0;line-height:1.65;color:#DCE1F7;white-space:pre-line}
+.etk{align-self:flex-start;padding:6px 12px;border-radius:999px;font-weight:700;font-size:12px;letter-spacing:2px}
+.kapat{position:absolute;top:12px;right:12px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(0,0,0,.55);color:#fff;font-size:24px;cursor:pointer}
+footer{border-top:1px solid var(--cizgi);padding:28px 0 40px;color:var(--soluk);font-size:14px;line-height:1.6}
+@media (max-width:720px){.pen{grid-template-columns:1fr}.pen .metin{max-height:none}.giris{padding-top:36px}.logo span{display:none}}
+</style>
+</head>
+<body>
+<header class="kap">
+  <div class="ust">
+    <a class="logo" href="./" aria-label="OZA BİLGİ ana sayfa">
+      <svg width="40" height="40" viewBox="0 0 590 590" aria-hidden="true"><path d="M 504 230 A 213 213 0 1 1 335 108" fill="none" stroke="#fff" stroke-width="86" stroke-linecap="round"/><path d="M448 30 L458 104 L533 138 L458 172 L448 246 L438 172 L363 138 L438 104 Z" fill="#FFC83D"/></svg>
+      <b>OZA</b><span>BİLGİ</span>
+    </a>
+    <a class="ig" href="https://www.instagram.com/oza_bilgi/" rel="noopener">@oza_bilgi</a>
+  </div>
+  <section class="giris">
+    <div class="kicker">BİLİYOR MUYDUNUZ?</div>
+    <h1>Her gün, bilmediğin bir bilgi</h1>
+    <p>Tarihten bilime, doğadan dile kadar kısa ve şaşırtıcı bilgi kartları. Her bilgi Vikipedi'den kontrol edilir ve kaynağıyla birlikte verilir.</p>
+  </section>
+</header>
+
+<nav class="arac" aria-label="Filtreler">
+  <div class="kap" id="filtreler">
+    <div class="ara">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8792C2" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <label for="ara" style="position:absolute;left:-9999px">Bilgilerde ara</label>
+      <input id="ara" type="search" placeholder="Bilgilerde ara…" autocomplete="off">
+    </div>
+  </div>
+</nav>
+
+<main class="kap">
+  <p class="sayi" id="sayi" aria-live="polite"></p>
+  <div class="izgara" id="izgara"></div>
+</main>
+
+<dialog id="pencere" aria-labelledby="p-baslik">
+  <div style="position:relative">
+    <button class="kapat" id="kapat" aria-label="Kapat">×</button>
+    <div class="pen">
+      <img id="p-gorsel" alt="">
+      <div class="metin">
+        <span class="etk" id="p-etk"></span>
+        <h2 id="p-baslik"></h2>
+        <p id="p-metin"></p>
+        <a id="p-link" href="#" rel="noopener">Vikipedi'de oku</a>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<footer class="kap">
+  OZA BİLGİ · Bilgiler Vikipedi maddelerinden derlenir ve özetlenir; ayrıntılar için her kartın kaynak linkine bakın.<br>
+  Instagram: <a href="https://www.instagram.com/oza_bilgi/" rel="noopener">@oza_bilgi</a>
+</footer>
+
+<script>
+const KAT = {"BİLGİ":"#2F7BFF","TARİH":"#FF3B3B","BİLİM":"#B347FF","DOĞA":"#1FC75A","DİL":"#FFC400"};
+let veri = [], secili = "TÜMÜ";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function ayikla(k){
+  const ac = k.aciklama || "";
+  const parca = ac.split("\n\n");
+  const baslik = k.baslik || parca[0] || k.konu;
+  const govde = parca.slice(1).filter(p => !p.startsWith("#") && !p.startsWith("Daha fazla bilgi") && !p.startsWith("Kaynak:")).join("\n\n");
+  return {baslik, govde};
+}
+
+function filtreCiz(){
+  const f = $("#filtreler");
+  const tum = ["TÜMÜ", ...Object.keys(KAT)];
+  f.insertAdjacentHTML("afterbegin", tum.map(k =>
+    `<button class="cip" data-k="${k}" aria-pressed="${k===secili}">${k!=="TÜMÜ"?`<i style="background:${KAT[k]}"></i>`:""}${k}</button>`).join(""));
+  f.querySelectorAll(".cip").forEach(b => b.onclick = () => {
+    secili = b.dataset.k;
+    f.querySelectorAll(".cip").forEach(x => x.setAttribute("aria-pressed", x.dataset.k===secili));
+    listele();
+  });
+}
+
+function listele(){
+  const q = $("#ara").value.trim().toLocaleLowerCase("tr");
+  const l = veri.filter(k => (secili==="TÜMÜ" || k.kategori===secili) &&
+    (!q || (k.konu + " " + (k.aciklama||"")).toLocaleLowerCase("tr").includes(q)));
+  $("#sayi").textContent = l.length + " bilgi kartı";
+  $("#izgara").innerHTML = l.length ? l.map((k,i) => {
+    const {baslik} = ayikla(k);
+    return `<button class="kart" data-i="${veri.indexOf(k)}" aria-label="${esc(baslik)}">
+      <img src="${esc(k.dosya)}" alt="${esc(baslik)}" loading="lazy">
+      <div class="alt"><i style="background:${KAT[k.kategori]||"#888"}"></i>${esc(k.kategori)} · ${esc(k.konu)}</div></button>`;
+  }).join("") : `<p class="bos">Aramana uygun bilgi bulunamadı.</p>`;
+  document.querySelectorAll(".kart").forEach(b => b.onclick = () => ac(veri[+b.dataset.i]));
+}
+
+function ac(k){
+  const {baslik, govde} = ayikla(k);
+  $("#p-gorsel").src = k.dosya; $("#p-gorsel").alt = baslik;
+  $("#p-baslik").textContent = baslik;
+  $("#p-metin").textContent = govde;
+  const e = $("#p-etk"); e.textContent = k.kategori; e.style.background = KAT[k.kategori] || "#888";
+  e.style.color = k.kategori === "DİL" ? "#1A1405" : "#fff";
+  const link = k.link || ("https://tr.wikipedia.org/wiki/" + encodeURIComponent(k.konu.replace(/ /g,"_")));
+  $("#p-link").href = link; $("#p-link").textContent = "Kaynak: Vikipedi · " + k.konu;
+  $("#pencere").showModal();
+}
+$("#kapat").onclick = () => $("#pencere").close();
+$("#pencere").addEventListener("click", e => { if (e.target.id === "pencere") $("#pencere").close(); });
+$("#ara").addEventListener("input", listele);
+
+fetch("paylasilanlar.json?v=" + Date.now()).then(r => r.json()).then(d => {
+  veri = (d.paylasilanlar || []).filter(k => k.dosya && k.konu && !k.konu.startsWith("_") && KAT[k.kategori])
+    .sort((a,b) => String(b.zaman||"").localeCompare(String(a.zaman||"")));
+  filtreCiz(); listele();
+}).catch(() => { filtreCiz(); $("#izgara").innerHTML = `<p class="bos">Bilgiler yüklenemedi. Biraz sonra tekrar deneyin.</p>`; });
+</script>
+</body>
+</html>
