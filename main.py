@@ -249,12 +249,13 @@ INDIGO = (108, 124, 255)
 ALTIN2 = (255, 200, 51)
 
 
-def kart_ciz(kategori, baslik, ozet, numara, cikti, etiket=None, ust="BİLİYOR MUYDUNUZ?"):
+def kart_ciz(kategori, baslik, ozet, numara, cikti, etiket=None, ust="BİLİYOR MUYDUNUZ?",
+             renk=None, sag_ust=None, liste=None, zemin_renk=None):
     from PIL import ImageEnhance
-    renk = A.KATEGORILER[kategori]["renk"]
+    renk = renk or A.KATEGORILER[kategori]["renk"]
     etiket = (etiket or kategori).upper()
-    T = tema(renk)
-    vurgu = T["vurgu"]
+    T = tema(zemin_renk or renk)
+    vurgu = renk_rgb(renk)
     im = zemin2(t=T)
     X = 72
 
@@ -275,7 +276,7 @@ def kart_ciz(kategori, baslik, ozet, numara, cikti, etiket=None, ust="BİLİYOR 
     d.rectangle([bx, 78, bx + 4, 118], fill=ALTIN2)
     aralikli_yaz(d, (bx + 18, 78), "BİLGİ", f("SemiBold", 38), ALTIN2, 6)
     nf = f("Medium", 23)
-    no = f"BİLGİ KARTI  #{numara:03d}"
+    no = sag_ust or f"BİLGİ KARTI  #{numara:03d}"
     nw = aralikli_genislik(d, no, nf, 2)
     aralikli_yaz(d, (W - X - nw, 88), no, nf, (120, 132, 182), 2)
     d.rectangle([X, 162, W - X, 163], fill=tuple(int(c * 0.55) + 18 for c in T["acik"]))
@@ -303,11 +304,19 @@ def kart_ciz(kategori, baslik, ozet, numara, cikti, etiket=None, ust="BİLİYOR 
         y += satir_h
     y += 44
 
-    # gövde: solda çizgili alıntı bloğu
+    # gövde: renkli liste (tanıtım kartı) ya da çizgili alıntı bloğu
+    if liste:
+        lf = f("SemiBold", 38)
+        for metin, lrenk in liste:
+            d.rounded_rectangle([X, y + 12, X + 26, y + 38], 6, fill=lrenk)
+            d.text((X + 48, y), metin, font=lf, fill=(232, 236, 250))
+            y += 62
+        ozet = ""
     bf = f("Medium", 38)
     bs = satirlara_bol(d, ozet, bf, W - X - 104 - 40)[:5]
     blok_h = len(bs) * 56
-    d.rectangle([X, y + 4, X + 7, y + blok_h - 4], fill=vurgu)
+    if bs:
+        d.rectangle([X, y + 4, X + 7, y + blok_h - 4], fill=vurgu)
     for s in bs:
         d.text((X + 32, y), s, font=bf, fill=(220, 224, 242))
         y += 56
@@ -326,7 +335,32 @@ def kart_ciz(kategori, baslik, ozet, numara, cikti, etiket=None, ust="BİLİYOR 
 
 
 # ---------------------------------------------------------------- adımlar
+KUYRUK = KOK / "kuyruk.json"
+
+
+def kuyruktan_hazirla():
+    """kuyruk.json'da bekleyen hazır gönderi varsa sıradakini hazırlar."""
+    if not KUYRUK.exists():
+        return False
+    liste = json.loads(KUYRUK.read_text(encoding="utf-8"))
+    if not liste:
+        return False
+    g = liste[0]
+    dosya = f"cikti/{datetime.now(timezone.utc):%Y%m%d-%H%M%S}.jpg"
+    kart_ciz(g.get("kategori", "BİLGİ"), g["baslik"], g.get("ozet", ""), g.get("numara") or 0, KOK / dosya,
+             etiket=g.get("etiket"), ust=g.get("ust", "BİLİYOR MUYDUNUZ?"), renk=g.get("renk"),
+             sag_ust=g.get("sag_ust"), zemin_renk=g.get("zemin"), liste=[tuple(x) for x in g["liste"]] if g.get("liste") else None)
+    BEKLEYEN.write_text(json.dumps({
+        "konu": g.get("konu", g["baslik"]), "kategori": g.get("kategori", "BİLGİ"), "dosya": dosya,
+        "aciklama": g["aciklama"], "link": "", "numara": g.get("numara"), "kuyruk": True},
+        ensure_ascii=False, indent=1), encoding="utf-8")
+    print(f"[KUYRUK] hazır: {g['baslik']} -> {dosya}")
+    return True
+
+
 def hazirla():
+    if kuyruktan_hazirla():
+        return
     durum = durum_oku()
     kullanilan = [p["konu"] for p in durum["paylasilanlar"] if p.get("konu")]
     kullanilan_k = {k.lower() for k in kullanilan}
@@ -404,7 +438,10 @@ def paylas():
         sonuc = ig_istek("POST", f"{kullanici}/media_publish", creation_id=kap["id"])
         print("Paylaşıldı, gönderi kimliği:", sonuc.get("id"))
     d = durum_oku()
-    d["sayac"] = max(d["sayac"], b.get("numara", d["sayac"] + 1))
+    d["sayac"] = max(d["sayac"], b.get("numara") or 0)
+    if b.get("kuyruk") and KUYRUK.exists():
+        liste = json.loads(KUYRUK.read_text(encoding="utf-8"))
+        KUYRUK.write_text(json.dumps(liste[1:], ensure_ascii=False, indent=1), encoding="utf-8")
     d["paylasilanlar"].append({"konu": b["konu"], "kategori": b["kategori"], "dosya": b["dosya"],
                                "zaman": datetime.now(timezone.utc).isoformat()})
     durum_yaz(d)
