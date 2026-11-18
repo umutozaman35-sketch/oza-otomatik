@@ -58,6 +58,6 @@ jobs:
       - name: Durumu kaydet
         if: steps.gorsel.outputs.var == '1'
         run: |
-          git add -A cikti paylasilanlar.json
+          git add -A .
           git commit -m "Paylaşım kaydı" || true
           git push
