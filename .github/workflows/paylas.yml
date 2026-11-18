@@ -1,9 +1,7 @@
 name: OZA BİLGİ otomatik paylaşım
 
 on:
-  schedule:
-    # Saatler UTC'dir. Bakü saatiyle 10:00, 13:00, 16:00, 19:00, 22:00 (günde 5 kart, her kategoriden 1).
-    - cron: "7 6-18/3 * * *"
+  # Hesap HEDEFLERİN YOLUNDA'ya geçti; otomatik kart paylaşımı kapatıldı (sadece elle çalıştırılabilir).
   workflow_dispatch: {}
 
 permissions:
