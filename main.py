@@ -443,6 +443,7 @@ def paylas():
         liste = json.loads(KUYRUK.read_text(encoding="utf-8"))
         KUYRUK.write_text(json.dumps(liste[1:], ensure_ascii=False, indent=1), encoding="utf-8")
     d["paylasilanlar"].append({"konu": b["konu"], "kategori": b["kategori"], "dosya": b["dosya"],
+                               "aciklama": b.get("aciklama", ""), "link": b.get("link", ""),
                                "zaman": datetime.now(timezone.utc).isoformat()})
     durum_yaz(d)
     BEKLEYEN.unlink()
