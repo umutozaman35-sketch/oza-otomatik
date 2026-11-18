@@ -1,0 +1,83 @@
+[
+ {
+  "konu": "_tanitim_1",
+  "renk": "#FFC83D",
+  "ust": "MERHABA",
+  "etiket": "OZA BİLGİ",
+  "sag_ust": "TANIŞALIM  1/3",
+  "baslik": "Her gün, bilmediğin bir bilgi",
+  "ozet": "Her gün 10:00 ile 22:00 arasında, iki saatte bir kısa bir bilgi kartı. Her bilgi Vikipedi'den kontrol edilir.",
+  "aciklama": "Her gün, bilmediğin bir bilgi 💡\n\nOZA BİLGİ'ye hoş geldin! Her gün 10:00 ile 22:00 arasında, iki saatte bir kısa ve şaşırtıcı bir bilgi kartı paylaşıyoruz. Her bilgi Vikipedi'den kontrol edilir ve kaynağıyla birlikte verilir.\n\nTakip et, kaydet, paylaş: @oza_bilgi\n\n#ozabilgi #bilgi #genelkültür #ilginçbilgiler #biliyormuydunuz",
+  "zemin": "#6C7CFF"
+ },
+ {
+  "konu": "_tanitim_2",
+  "renk": "#FFC83D",
+  "ust": "KATEGORİLER",
+  "etiket": "5 RENK",
+  "sag_ust": "TANIŞALIM  2/3",
+  "baslik": "Beş renk, beş dünya",
+  "liste": [
+   [
+    "BİLGİ · Genel kültür",
+    "#2F7BFF"
+   ],
+   [
+    "TARİH · Uygarlıklar, keşifler",
+    "#FF3B3B"
+   ],
+   [
+    "BİLİM · Uzay, fizik, insan",
+    "#B347FF"
+   ],
+   [
+    "DOĞA · Hayvanlar, gezegenimiz",
+    "#1FC75A"
+   ],
+   [
+    "DİL · Kelimelerin hikâyesi",
+    "#FFC400"
+   ]
+  ],
+  "aciklama": "Beş renk, beş dünya 🎨\n\n🔵 BİLGİ: Genel kültür ve şaşırtıcı gerçekler\n🔴 TARİH: Olaylar, uygarlıklar, keşifler\n🟣 BİLİM: Uzay, fizik, insan vücudu\n🟢 DOĞA: Hayvanlar, bitkiler, gezegenimiz\n🟡 DİL: Kelimelerin hikâyesi, Türkçe\n\nEn çok hangi renk seni çekiyor? Yorumlara yaz!\n\n#ozabilgi #bilgi #tarih #bilim #doğa",
+  "zemin": "#6C7CFF"
+ },
+ {
+  "konu": "_tanitim_3",
+  "renk": "#FFC83D",
+  "ust": "TAKİP ET",
+  "etiket": "BİLDİRİMLER",
+  "sag_ust": "TANIŞALIM  3/3",
+  "baslik": "Bildirimleri aç, hiçbir bilgiyi kaçırma",
+  "ozet": "Profildeki zile dokun. Beğendiğin kartı kaydet, arkadaşına gönder. Merak ettiğin konuyu yorumlara yaz.",
+  "aciklama": "Hiçbir bilgiyi kaçırma 🔔\n\nProfildeki zil simgesine dokun ve gönderi bildirimlerini aç. Beğendiğin kartları kaydet, sonra tekrar bak. Merak ettiğin bir konu varsa yorumlara yaz; belki bir sonraki kart onu anlatır!\n\n@oza_bilgi\n\n#ozabilgi #bilgi #ilginçbilgiler",
+  "zemin": "#6C7CFF"
+ },
+ {
+  "konu": "Ay",
+  "kategori": "BİLİM",
+  "etiket": "UZAY",
+  "numara": 1,
+  "baslik": "Ay her yıl bizden yaklaşık 3,8 cm uzaklaşıyor!",
+  "ozet": "Apollo astronotlarının Ay'a bıraktığı yansıtıcılara lazer gönderilerek ölçüldü: Ay, tırnaklarımızın uzama hızına yakın bir hızla Dünya'dan uzaklaşıyor.",
+  "aciklama": "Ay her yıl bizden yaklaşık 3,8 cm uzaklaşıyor!\n\nAy'a her bakışınızda biraz daha uzaklaşıyor olabilir mi? Evet! Bilim insanları, Apollo görevlerinde bırakılan aynalara lazer yollayıp dönüş süresini ölçerek Ay'ın yılda yaklaşık 3,8 cm uzaklaştığını hesapladı. Bu etkinin ana nedeni Dünya ile Ay arasındaki gelgit etkileşimi. Milyonlarca yıl sonra gökyüzündeki Ay'ın görünüşü bugünkünden farklı olacak. 🌙 Siz bunu biliyor muydunuz? Arkadaşınıza gönderip şaşırtın!\n\nDaha fazla bilgi için @oza_bilgi takip et, kaydet ve paylaş!\n\n#uzay #astronomi #bilgi #ozabilgi #biliyormuydunuz #ilginçbilgiler"
+ },
+ {
+  "konu": "Antikitera düzeneği",
+  "kategori": "BİLGİ",
+  "etiket": "ANTİK YUNAN",
+  "numara": 2,
+  "baslik": "Antik çağdan kalma mekanik bir hesap makinesi deniz dibinde bulundu",
+  "ozet": "Antikitera düzeneği, astronomik konumları hesaplamak için tasarlanmış. 1900-1901 yıllarında Antikitera adası yakınlarındaki batıktan çıkarıldı.",
+  "aciklama": "Antik çağdan kalma mekanik bir hesap makinesi deniz dibinde bulundu\n\nAntikitera düzeneği, astronomik konumları hesaplamak için tasarlanmış eski bir mekanik hesap makinesidir. Girit ile Mora Yarımadası arasında, Yunan Küçük Çuha (Antikitera) adası yakınlarında bir batık keşfedildi. Düzenek, 1900-1901 yılları arasında bu batıktan çıkarıldı. Cihaz bu yüzden adını Antikitera'dan alır.\n\nKaynak: Vikipedi, \"Antikitera düzeneği\" maddesi\n\nDaha fazla bilgi için @oza_bilgi takip et, kaydet ve paylaş!\n\n#bilgi #genelkültür #ilginçbilgiler #ozabilgi"
+ },
+ {
+  "konu": "Kuiper Kuşağı",
+  "kategori": "BİLİM",
+  "etiket": "UZAY",
+  "numara": 3,
+  "baslik": "Neptün'ün ötesinde 100 km'den büyük en az 70.000 cisim olabilir",
+  "ozet": "Kuiper Kuşağı, Güneş'ten yaklaşık 30-50 astronomik birim uzakta bir disk. İlk buzlu cisimleri 1992'de Hawaii'deki astronomlar keşfetti.",
+  "aciklama": "Neptün'ün ötesinde 100 km'den büyük en az 70.000 cisim olabilir\n\nKuiper Kuşağı, Güneş Sistemi'nin kenarında Neptün'ün yörüngesinin ötesinde yer alan bir halka. Esas olarak uzay kayalarından ve cüce gezegenlerden oluşuyor. Şimdiye kadar burada 400 gezegenimsi gök taşı bulundu, ancak çapı 100 km'den büyük en az 70.000 cisim olduğu düşünülüyor. NASA'nın New Horizons aracı bu bölgeye doğru yola çıktı ve 14 Temmuz 2015'te Plüton'un yakınından geçti.\n\nKaynak: Vikipedi, \"Kuiper Kuşağı\" maddesi\n\nDaha fazla bilgi için @oza_bilgi takip et, kaydet ve paylaş!\n\n#bilim #uzay #bilgi #ozabilgi"
+ }
+]
