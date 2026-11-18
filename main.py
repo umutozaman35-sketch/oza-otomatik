@@ -151,9 +151,11 @@ def gorsel_uret(kategori, baslik, detay, cikti, no=None):
     im = arka_plan(renk)
     d = ImageDraw.Draw(im)
 
-    # logo: OZA | BİLGİ
-    d.text((70, 62), "OZA", font=font("ExtraBold", 66), fill="white")
-    lx = 70 + d.textlength("OZA", font=font("ExtraBold", 66)) + 22
+    # logo: [işaret] OZA | BİLGİ
+    from logo_uret import isaret
+    im.paste(isaret(84), (64, 56), isaret(84))
+    d.text((166, 62), "OZA", font=font("ExtraBold", 66), fill="white")
+    lx = 166 + d.textlength("OZA", font=font("ExtraBold", 66)) + 22
     d.rectangle([lx, 74, lx + 5, 124], fill=SARI)
     harf_aralikli(d, (lx + 24, 80), "BİLGİ", font("Bold", 34), SARI, 7)
     if no is not None:
