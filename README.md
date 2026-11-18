@@ -1,6 +1,6 @@
 # OZA BİLGİ – Otomatik Instagram Bilgi Kartı Sistemi
 
-Bu sistem Bakü saatiyle her 3 saatte bir (08:00, 11:00, 14:00, 17:00, 20:00; günde 5 kez) çalışır ve şunları yapar:
+Bu sistem Bakü saatiyle her 3 saatte bir (10:00, 13:00, 16:00, 19:00, 22:00; günde 5 kez) çalışır ve şunları yapar:
 
 1. **Uzay, Tarih, Bilim, Doğa, İnsan, Dünya** konularından sıradakini seçer.
 2. Claude ile eğlenceli, önemli ve doğru bir "Biliyor muydunuz?" bilgisi yazar; daha önce paylaşılanları tekrar etmez.

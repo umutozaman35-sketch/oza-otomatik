@@ -2,7 +2,7 @@ name: OZA BİLGİ otomatik paylaşım
 
 on:
   schedule:
-    - cron: "7 4-16/3 * * *"
+    - cron: "0 6-18/3 * * *"
   workflow_dispatch: {}
 
 permissions:
