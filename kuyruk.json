@@ -1,16 +1,5 @@
 [
  {
-  "konu": "_tanitim_3",
-  "renk": "#FFC83D",
-  "ust": "TAKİP ET",
-  "etiket": "BİLDİRİMLER",
-  "sag_ust": "TANIŞALIM  3/3",
-  "baslik": "Bildirimleri aç, hiçbir bilgiyi kaçırma",
-  "ozet": "Profildeki zile dokun. Beğendiğin kartı kaydet, arkadaşına gönder. Merak ettiğin konuyu yorumlara yaz.",
-  "aciklama": "Hiçbir bilgiyi kaçırma 🔔\n\nProfildeki zil simgesine dokun ve gönderi bildirimlerini aç. Beğendiğin kartları kaydet, sonra tekrar bak. Merak ettiğin bir konu varsa yorumlara yaz; belki bir sonraki kart onu anlatır!\n\n@oza_bilgi\n\n#ozabilgi #bilgi #ilginçbilgiler",
-  "zemin": "#6C7CFF"
- },
- {
   "konu": "Ay",
   "kategori": "BİLİM",
   "etiket": "UZAY",
